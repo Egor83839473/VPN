@@ -1,69 +1,143 @@
-# Клонируй свой репозиторий (если нет локально)
-git clone https://github.com/egor83839473/VPN.git
-cd VPN
-
-# Создай index.html прямо сейчас
-cat > index.html << 'EOF'
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>VPN Import</title>
-    <script>
-        // Автоматический импорт VPN
-        (function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            let key = urlParams.get('key');
-            
-            if (key) {
-                try {
-                    // Декодируем base64
-                    key = key.replace(/_/g, '/').replace(/-/g, '+');
-                    while (key.length % 4) key += '=';
-                    const decodedUrl = atob(key);
-                    
-                    // Сначала пробуем Happ
-                    window.location.href = 'happ://import/' + encodeURIComponent(decodedUrl);
-                    
-                    // Если не сработало через 1 сек - пробуем Hiddify
-                    setTimeout(function() {
-                        window.location.href = 'hiddify://import/' + encodeURIComponent(decodedUrl);
-                    }, 1000);
-                    
-                    // Еще через сек - показываем инструкцию
-                    setTimeout(function() {
-                        document.body.innerHTML = '<h2>VPN готов к установке!</h2>' +
-                            '<p>Если приложение не открылось автоматически:</p>' +
-                            '<p>1. Установи Hiddify или Happ</p>' +
-                            '<p>2. Нажми кнопку ниже:</p>' +
-                            '<button onclick="window.location.href=\'' + 'happ://import/' + encodeURIComponent(decodedUrl) + '\'">Открыть в Happ</button>' +
-                            '<button onclick="window.location.href=\'' + 'hiddify://import/' + encodeURIComponent(decodedUrl) + '\'">Открыть в Hiddify</button>';
-                    }, 2000);
-                    
-                } catch(e) {
-                    document.body.innerHTML = '<h2>Ошибка в ссылке</h2><p>Попроси друга сгенерировать новую</p>';
-                }
-            } else {
-                document.body.innerHTML = '<h2>VPN Link Generator</h2>' +
-                    '<p>Используй Python-скрипт для создания ссылки</p>' +
-                    '<p>Формат: ?key=base64_ссылка</p>';
-            }
-        })();
-    </script>
+    <title>VPN Auto Import</title>
     <style>
-        body { font-family: Arial; text-align: center; padding: 50px; background: #0a0f1e; color: white; }
-        button { background: #4CAF50; color: white; padding: 15px 30px; margin: 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { font-size: 2.5em; margin-bottom: 20px; }
+        .status { 
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        .button:hover {
+            transform: scale(1.05);
+        }
+        .hidden { display: none; }
+        .link-box {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 5px;
+            word-break: break-all;
+            font-size: 12px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <h1>🔄 Загрузка...</h1>
-    <p>Пожалуйста, подожди, сейчас всё откроется</p>
+    <div class="container">
+        <h1>🔐 VPN ИМПОРТ</h1>
+        <div id="status" class="status">
+            ⏳ Загружаем конфигурацию...
+        </div>
+        
+        <div id="buttons" class="hidden">
+            <a id="happLink" class="button">📱 Открыть в Happ</a>
+            <a id="hiddifyLink" class="button">🚀 Открыть в Hiddify</a>
+        </div>
+        
+        <div id="manual" class="hidden">
+            <p>🤔 Приложение не открылось?</p>
+            <p>1. Установи <b>Hiddify</b> или <b>Happ</b></p>
+            <p>2. Нажми на кнопку выше</p>
+            <p>3. Или скопируй ссылку вручную:</p>
+            <div id="manualLink" class="link-box"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // Получаем ключ из URL
+            const urlParams = new URLSearchParams(window.location.search);
+            let key = urlParams.get('key');
+            
+            if (!key) {
+                document.getElementById('status').innerHTML = '❌ Нет ключа в ссылке';
+                return;
+            }
+
+            try {
+                // Декодируем base64
+                let base64 = key.replace(/_/g, '/').replace(/-/g, '+');
+                while (base64.length % 4) base64 += '=';
+                const subscriptionUrl = atob(base64);
+                
+                // Кодируем для URL
+                const encodedUrl = encodeURIComponent(subscriptionUrl);
+                
+                // Создаем ссылки
+                const happFullUrl = 'happ://import/' + encodedUrl;
+                const hiddifyFullUrl = 'hiddify://import/' + encodedUrl;
+                
+                // Обновляем кнопки
+                document.getElementById('happLink').href = happFullUrl;
+                document.getElementById('hiddifyLink').href = hiddifyFullUrl;
+                
+                // Показываем кнопки
+                document.getElementById('buttons').classList.remove('hidden');
+                
+                // Показываем ручную ссылку
+                document.getElementById('manualLink').innerText = subscriptionUrl;
+                
+                // Статус: успех
+                document.getElementById('status').innerHTML = '✅ Конфигурация загружена!';
+                
+                // АВТОМАТИЧЕСКИЙ РЕДИРЕКТ (самое важное!)
+                // Пробуем Happ
+                window.location.href = happFullUrl;
+                
+                // Если не сработало через 500мс - пробуем Hiddify
+                setTimeout(function() {
+                    window.location.href = hiddifyFullUrl;
+                }, 500);
+                
+                // Если всё еще не сработало через 1.5с - показываем инструкцию
+                setTimeout(function() {
+                    document.getElementById('manual').classList.remove('hidden');
+                }, 1500);
+                
+            } catch(e) {
+                document.getElementById('status').innerHTML = '❌ Ошибка: неверный формат ссылки';
+                console.error(e);
+            }
+        })();
+    </script>
 </body>
 </html>
-EOF
-
-# Добавь, закоммить и запушь
-git add index.html
-git commit -m "Add VPN import redirector"
-git push origin main
