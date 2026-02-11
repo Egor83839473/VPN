@@ -1,37 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Подключение VPN</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VPN Link Generator</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #121212; color: white; text-align: center; }
-        .btn { padding: 15px 30px; background: #007bff; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; }
+        body { font-family: Arial; padding: 40px; max-width: 800px; margin: auto; }
+        input, button { padding: 12px; font-size: 16px; width: 100%; margin-bottom: 20px; }
+        .output { background: #f0f0f0; padding: 15px; word-break: break-all; }
     </style>
 </head>
 <body>
-    <div>
-        <h1>Настройка VPN</h1>
-        <p>Нажмите кнопку ниже, если приложение не открылось автоматически</p><br>
-        <a id="vpnLink" class="btn" href="#">ДОБАВИТЬ В ПРИЛОЖЕНИЕ</a>
+    <h2>🔐 Генератор ссылки для Hiddify / Happ</h2>
+    <label>Вставьте Subscription URL из 3X-UI (ссылку на JSON):</label>
+    <input type="url" id="rawUrl" placeholder="https://ваш-сервер:порт/sub/.../json" />
+    <button onclick="generateLink()">Сгенерировать ссылку</button>
+    
+    <div id="resultContainer" style="display:none;">
+        <h3>Готовая ссылка для друга:</h3>
+        <div class="output" id="finalLink"></div>
+        <button onclick="copyLink()">📋 Копировать</button>
     </div>
 
     <script>
-        // Получаем ключ из URL (после ?key=)
-        const urlParams = new URLSearchParams(window.location.search);
-        const vpnKey = urlParams.get('key');
-
-        if (vpnKey) {
-            // Формируем ссылку для импорта
-            const fullLink = "hiddify://import/" + vpnKey;
-            document.getElementById('vpnLink').href = fullLink;
+        const BASE_URL = "https://egor83839473.github.io";
+        
+        function generateLink() {
+            const rawUrl = document.getElementById('rawUrl').value;
+            if (!rawUrl) return alert('Вставьте ссылку');
             
-            // Пытаемся открыть автоматически через 1 секунду
-            setTimeout(() => {
-                window.location.href = fullLink;
-            }, 1000);
-        } else {
-            document.body.innerHTML = "<h1>Ошибка: ключ не найден</h1>";
+            // Кодируем ссылку в base64 или encodeURIComponent
+            const encoded = btoa(rawUrl); // base64 чище для URL
+            const final = `${BASE_URL}/?key=${encoded}`;
+            
+            document.getElementById('finalLink').innerText = final;
+            document.getElementById('resultContainer').style.display = 'block';
+        }
+        
+        function copyLink() {
+            const link = document.getElementById('finalLink').innerText;
+            navigator.clipboard.writeText(link);
+            alert('Ссылка скопирована!');
         }
     </script>
 </body>
