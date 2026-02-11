@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Подключение VPN</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #121212; color: white; text-align: center; }
+        .btn { padding: 15px 30px; background: #007bff; color: white; text-decoration: none; border-radius: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>Настройка VPN</h1>
+        <p>Нажмите кнопку ниже, если приложение не открылось автоматически</p><br>
+        <a id="vpnLink" class="btn" href="#">ДОБАВИТЬ В ПРИЛОЖЕНИЕ</a>
+    </div>
+
+    <script>
+        // Получаем ключ из URL (после ?key=)
+        const urlParams = new URLSearchParams(window.location.search);
+        const vpnKey = urlParams.get('key');
+
+        if (vpnKey) {
+            // Формируем ссылку для импорта
+            const fullLink = "hiddify://import/" + vpnKey;
+            document.getElementById('vpnLink').href = fullLink;
+            
+            // Пытаемся открыть автоматически через 1 секунду
+            setTimeout(() => {
+                window.location.href = fullLink;
+            }, 1000);
+        } else {
+            document.body.innerHTML = "<h1>Ошибка: ключ не найден</h1>";
+        }
+    </script>
+</body>
+</html>
