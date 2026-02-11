@@ -1,45 +1,69 @@
+# Клонируй свой репозиторий (если нет локально)
+git clone https://github.com/egor83839473/VPN.git
+cd VPN
+
+# Создай index.html прямо сейчас
+cat > index.html << 'EOF'
 <!DOCTYPE html>
 <html>
 <head>
-    <title>VPN Link Generator</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>VPN Import</title>
+    <script>
+        // Автоматический импорт VPN
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let key = urlParams.get('key');
+            
+            if (key) {
+                try {
+                    // Декодируем base64
+                    key = key.replace(/_/g, '/').replace(/-/g, '+');
+                    while (key.length % 4) key += '=';
+                    const decodedUrl = atob(key);
+                    
+                    // Сначала пробуем Happ
+                    window.location.href = 'happ://import/' + encodeURIComponent(decodedUrl);
+                    
+                    // Если не сработало через 1 сек - пробуем Hiddify
+                    setTimeout(function() {
+                        window.location.href = 'hiddify://import/' + encodeURIComponent(decodedUrl);
+                    }, 1000);
+                    
+                    // Еще через сек - показываем инструкцию
+                    setTimeout(function() {
+                        document.body.innerHTML = '<h2>VPN готов к установке!</h2>' +
+                            '<p>Если приложение не открылось автоматически:</p>' +
+                            '<p>1. Установи Hiddify или Happ</p>' +
+                            '<p>2. Нажми кнопку ниже:</p>' +
+                            '<button onclick="window.location.href=\'' + 'happ://import/' + encodeURIComponent(decodedUrl) + '\'">Открыть в Happ</button>' +
+                            '<button onclick="window.location.href=\'' + 'hiddify://import/' + encodeURIComponent(decodedUrl) + '\'">Открыть в Hiddify</button>';
+                    }, 2000);
+                    
+                } catch(e) {
+                    document.body.innerHTML = '<h2>Ошибка в ссылке</h2><p>Попроси друга сгенерировать новую</p>';
+                }
+            } else {
+                document.body.innerHTML = '<h2>VPN Link Generator</h2>' +
+                    '<p>Используй Python-скрипт для создания ссылки</p>' +
+                    '<p>Формат: ?key=base64_ссылка</p>';
+            }
+        })();
+    </script>
     <style>
-        body { font-family: Arial; padding: 40px; max-width: 800px; margin: auto; }
-        input, button { padding: 12px; font-size: 16px; width: 100%; margin-bottom: 20px; }
-        .output { background: #f0f0f0; padding: 15px; word-break: break-all; }
+        body { font-family: Arial; text-align: center; padding: 50px; background: #0a0f1e; color: white; }
+        button { background: #4CAF50; color: white; padding: 15px 30px; margin: 10px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
     </style>
 </head>
 <body>
-    <h2>🔐 Генератор ссылки для Hiddify / Happ</h2>
-    <label>Вставьте Subscription URL из 3X-UI (ссылку на JSON):</label>
-    <input type="url" id="rawUrl" placeholder="https://ваш-сервер:порт/sub/.../json" />
-    <button onclick="generateLink()">Сгенерировать ссылку</button>
-    
-    <div id="resultContainer" style="display:none;">
-        <h3>Готовая ссылка для друга:</h3>
-        <div class="output" id="finalLink"></div>
-        <button onclick="copyLink()">📋 Копировать</button>
-    </div>
-
-    <script>
-        const BASE_URL = "https://egor83839473.github.io";
-        
-        function generateLink() {
-            const rawUrl = document.getElementById('rawUrl').value;
-            if (!rawUrl) return alert('Вставьте ссылку');
-            
-            // Кодируем ссылку в base64 или encodeURIComponent
-            const encoded = btoa(rawUrl); // base64 чище для URL
-            const final = `${BASE_URL}/?key=${encoded}`;
-            
-            document.getElementById('finalLink').innerText = final;
-            document.getElementById('resultContainer').style.display = 'block';
-        }
-        
-        function copyLink() {
-            const link = document.getElementById('finalLink').innerText;
-            navigator.clipboard.writeText(link);
-            alert('Ссылка скопирована!');
-        }
-    </script>
+    <h1>🔄 Загрузка...</h1>
+    <p>Пожалуйста, подожди, сейчас всё откроется</p>
 </body>
 </html>
+EOF
+
+# Добавь, закоммить и запушь
+git add index.html
+git commit -m "Add VPN import redirector"
+git push origin main
