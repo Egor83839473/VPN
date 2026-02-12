@@ -3,117 +3,29 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VPN Import — ПК / Телефон</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0a0f1e;
-      color: white;
-      text-align: center;
-      padding: 20px;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .container {
-      max-width: 600px;
-      background: #1a1f2e;
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    }
-    h2 { color: #4CAF50; }
-    .button {
-      display: inline-block;
-      background: #4CAF50;
-      color: white;
-      padding: 12px 24px;
-      margin: 8px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    .button.secondary {
-      background: #2a2f3e;
-      border: 1px solid #4CAF50;
-    }
-    .link-box {
-      background: #2a2f3e;
-      padding: 12px;
-      border-radius: 8px;
-      word-break: break-all;
-      font-size: 12px;
-      margin-top: 20px;
-      color: #aaa;
-    }
-  </style>
+  <title>VPN Import</title>
 </head>
 <body>
-  <div class="container">
-    <h2>🔄 Загрузка...</h2>
-    <div id="status">Определяем тип ссылки...</div>
-    <div id="fallback" style="display: none;"></div>
-  </div>
+  <h2>🔄 Открытие приложения...</h2>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // ========== ПОЛУЧАЕМ ПАРАМЕТР key ==========
-      const params = new URLSearchParams(window.location.search);
-      let key = params.get("key");
-      
-      if (!key) {
-        document.body.innerHTML = "<h2>❌ Ошибка: параметр 'key' не передан</h2>";
-        return;
-      }
+    const key = new URLSearchParams(window.location.search).get("key");
 
-      // ========== ДЕКОДИРУЕМ ==========
-      try {
-        key = decodeURIComponent(key);
-      } catch (e) {}
-
-      const status = document.getElementById('status');
-      const fallback = document.getElementById('fallback');
-
-      // ========== ОПРЕДЕЛЯЕМ ТИП ССЫЛКИ ==========
-      let isHappAdd = key.startsWith('happ://add/');
-      let cleanUrl = isHappAdd ? key.replace(/^happ:\/\/add\//, '') : key;
-      
-      status.innerHTML = isHappAdd 
-        ? '🔄 Открываем через Happ (ПК)...' 
-        : '🔄 Открываем чистую подписку (Телефон)...';
-
-      // ========== ПЫТАЕМСЯ ОТКРЫТЬ ==========
+    if (key) {
+      // Пробуем открыть приложение
       window.location.href = key;
 
-      // ========== ЕСЛИ НЕ СРАБОТАЛО — ПОКАЗЫВАЕМ КНОПКИ ==========
+      // Если не сработало через 1.5 секунды — показываем ссылку
       setTimeout(() => {
-        status.innerHTML = '⚠️ Выберите способ подключения:';
-        
-        let buttons = '';
-        
-        // Кнопка для Happ (add)
-        if (isHappAdd) {
-          buttons += `<a href="${key}" class="button">📱 Happ (add)</a>`;
-        } else {
-          buttons += `<a href="happ://add/${cleanUrl}" class="button">📱 Happ (add)</a>`;
-        }
-        
-        // Кнопка для чистой подписки
-        buttons += `<a href="${cleanUrl}" class="button secondary">🔗 Чистая подписка</a>`;
-        
-        // Дополнительные клиенты
-        buttons += `<a href="hiddify://import/${cleanUrl}" class="button secondary">🚀 Hiddify</a>`;
-        buttons += `<a href="v2raytun://add/${cleanUrl}" class="button secondary">📡 V2RayTun</a>`;
-        
-        buttons += `<div class="link-box">📋 Чистая подписка:<br>${cleanUrl}</div>`;
-        
-        fallback.innerHTML = buttons;
-        fallback.style.display = 'block';
+        document.body.innerHTML = `
+          <h2>⚠️ Если приложение не открылось автоматически:</h2>
+          <p><a href="${key}" style="font-size: 20px;">👉 Нажмите здесь</a></p>
+          <p style="font-size: 12px; color: #666;">${key}</p>
+        `;
       }, 1500);
-    });
+    } else {
+      document.body.innerHTML = "<h2>❌ Ошибка: параметр 'key' не передан</h2>";
+    }
   </script>
 </body>
 </html>
