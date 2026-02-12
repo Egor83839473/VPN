@@ -2,224 +2,32 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>VPN Import — для всех устройств</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: #0a0f1e;
-      color: white;
-      text-align: center;
-      padding: 20px;
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    .container {
-      max-width: 600px;
-      background: #1a1f2e;
-      border-radius: 24px;
-      padding: 30px 20px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-      border: 1px solid #2a2f3e;
-    }
-    h1 {
-      color: #4CAF50;
-      font-size: 28px;
-      margin-bottom: 8px;
-    }
-    .subtitle {
-      color: #aaa;
-      margin-bottom: 30px;
-      font-size: 16px;
-    }
-    .button-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin: 20px 0;
-    }
-    .button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px 20px;
-      border-radius: 14px;
-      font-size: 18px;
-      font-weight: 600;
-      text-decoration: none;
-      transition: 0.2s;
-      border: none;
-      color: white;
-    }
-    .button i { margin-right: 10px; font-size: 24px; }
-    .happ { background: #4CAF50; color: white; }
-    .v2raytun { background: #FF6B4A; color: white; }
-    .hiddify { background: #2196F3; color: white; }
-    .fairvpn { background: #9C27B0; color: white; }
-    .outline { background: #795548; color: white; }
-    .link-box {
-      background: #0f1419;
-      padding: 16px;
-      border-radius: 12px;
-      word-break: break-all;
-      font-size: 13px;
-      color: #8ab4f8;
-      margin-top: 25px;
-      border: 1px solid #2a2f3e;
-      text-align: left;
-    }
-    .device-badge {
-      background: #2a2f3e;
-      padding: 8px 16px;
-      border-radius: 30px;
-      display: inline-block;
-      margin-bottom: 15px;
-      font-size: 14px;
-      color: #ddd;
-    }
-    hr {
-      border: none;
-      border-top: 1px solid #2a2f3e;
-      margin: 25px 0 15px;
-    }
-    .small-note {
-      font-size: 12px;
-      color: #888;
-    }
-  </style>
+  <title>Открытие V2RayTun / Happ...</title>
 </head>
 <body>
-  <div class="container">
-    <h1>🔐 VPN IMPORT</h1>
-    <div class="subtitle">Выбери своё приложение</div>
-    
-    <div id="deviceInfo" class="device-badge">⏳ Определяем устройство...</div>
-    
-    <div id="buttons" class="button-grid">
-      <!-- Сюда динамически подставятся кнопки -->
-    </div>
-
-    <div id="manual" style="display: none;">
-      <hr>
-      <div class="small-note">📋 Или скопируй ссылку подписки вручную:</div>
-      <div id="subscriptionLink" class="link-box"></div>
-    </div>
-  </div>
+  <h2>Открытие приложения...</h2>
 
   <script>
-    (function() {
-      // ========== ПОЛУЧАЕМ ПАРАМЕТР key ==========
-      const urlParams = new URLSearchParams(window.location.search);
-      const key = urlParams.get('key');
-      
-      if (!key) {
-        document.querySelector('.device-badge').innerText = '❌ Ошибка: параметр key не передан';
-        return;
+    document.addEventListener("DOMContentLoaded", () => {
+      // Получаем ключ из параметра GET
+      const params = new URLSearchParams(window.location.search);
+      const key = params.get("key");
+
+      if (key) {
+        // Пробуем открыть приложение через пользовательский протокол
+        window.location.href = key;
+
+        // Если приложение не открылось, показываем ссылку для ручного открытия
+        setTimeout(() => {
+          document.body.innerHTML = `
+            <h2>Если приложение не открылось автоматически, нажмите ссылку ниже:</h2>
+            <a href="${key}">${key}</a>
+          `;
+        }, 2000);
+      } else {
+        document.body.innerHTML = "<h2>Ошибка: параметр 'key' не передан.</h2>";
       }
-
-      // Декодируем ссылку
-      let decodedKey = decodeURIComponent(key);
-      // Ожидаемый формат: happ://add/ЧИСТАЯ_SUBSCRIPTION_URL
-      let subscriptionUrl = decodedKey.replace(/^happ:\/\/add\//, '');
-      
-      // ========== ОПРЕДЕЛЯЕМ УСТРОЙСТВО ==========
-      const ua = navigator.userAgent.toLowerCase();
-      const platform = navigator.platform?.toLowerCase() || '';
-      
-      const isAndroid = ua.includes('android');
-      const isIOS = ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod');
-      const isWindows = ua.includes('win') || platform.includes('win');
-      const isMac = ua.includes('macintosh') || platform.includes('mac');
-      const isLinux = ua.includes('linux') && !isAndroid;
-
-      let deviceName = 'Неизвестное устройство';
-      if (isAndroid) deviceName = '📱 Android';
-      else if (isIOS) deviceName = '🍏 iPhone/iPad';
-      else if (isWindows) deviceName = '💻 Windows';
-      else if (isMac) deviceName = '💻 Mac';
-      else if (isLinux) deviceName = '🐧 Linux';
-
-      document.getElementById('deviceInfo').innerText = `📌 Устройство: ${deviceName}`;
-
-      // ========== ФОРМИРУЕМ КНОПКИ ==========
-      let buttonsHtml = '';
-
-      // --- УНИВЕРСАЛЬНЫЕ ПРОТОКОЛЫ ---
-      const happIntent = decodedKey; // happ://add/...
-      const hiddifyIntent = `hiddify://import/${subscriptionUrl}`;
-      const outlineIntent = `outline://${subscriptionUrl}`; // для Outline
-
-      // --- СПЕЦИФИЧНЫЕ ДЛЯ ANDROID ---
-      const v2raytunIntent = `v2raytun://add/${subscriptionUrl}`;
-
-      // --- СПЕЦИФИЧНЫЕ ДЛЯ iOS ---
-      const fairvpnIntent = `fairvpn://import/${subscriptionUrl}`;
-
-      // ========== ВЫВОД КНОПОК ПО УСТРОЙСТВУ ==========
-      
-      // ** ANDROID **
-      if (isAndroid) {
-        buttonsHtml = `
-          <a href="${happIntent}" class="button happ">📱 Happ (рекомендуется)</a>
-          <a href="${v2raytunIntent}" class="button v2raytun">📡 V2RayTun</a>
-          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify</a>
-          <a href="${outlineIntent}" class="button outline">🔵 Outline</a>
-        `;
-      }
-      
-      // ** iOS **
-      else if (isIOS) {
-        buttonsHtml = `
-          <a href="${happIntent}" class="button happ">📱 Happ (рекомендуется)</a>
-          <a href="${fairvpnIntent}" class="button fairvpn">✨ FairVPN</a>
-          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify</a>
-          <a href="${outlineIntent}" class="button outline">🔵 Outline</a>
-        `;
-      }
-      
-      // ** WINDOWS **
-      else if (isWindows) {
-        buttonsHtml = `
-          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify (лучше для Windows)</a>
-          <a href="${happIntent}" class="button happ">📱 Happ</a>
-          <a href="${outlineIntent}" class="button outline">🔵 Outline</a>
-        `;
-      }
-      
-      // ** MAC **
-      else if (isMac) {
-        buttonsHtml = `
-          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify (рекомендуется)</a>
-          <a href="${happIntent}" class="button happ">📱 Happ</a>
-          <a href="${fairvpnIntent}" class="button fairvpn">✨ FairVPN</a>
-        `;
-      }
-      
-      // ** LINUX и другие **
-      else {
-        buttonsHtml = `
-          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify</a>
-          <a href="${happIntent}" class="button happ">📱 Happ</a>
-        `;
-      }
-
-      // Вставляем кнопки
-      document.getElementById('buttons').innerHTML = buttonsHtml;
-
-      // ========== ПОКАЗЫВАЕМ ССЫЛКУ ПОДПИСКИ ==========
-      const manualDiv = document.getElementById('manual');
-      const subLinkEl = document.getElementById('subscriptionLink');
-      subLinkEl.innerText = subscriptionUrl;
-      manualDiv.style.display = 'block';
-
-      // ========== НЕ ДЕЛАЕМ АВТОМАТИЧЕСКИЙ РЕДИРЕКТ ==========
-      // Только кнопки. Пользователь сам тыкает.
-
-    })();
+    });
   </script>
 </body>
 </html>
