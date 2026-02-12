@@ -126,3 +126,34 @@
       const statusEl = document.getElementById('status');
       const bootEl = document.getElementById('boot');
       const dotsEl = document.getElementById('dots');
+setInterval(() => {
+        dotsEl.innerHTML = '.'.repeat((dotsEl.innerHTML.length % 3) + 1);
+      }, 300);
+
+      const timer = setInterval(() => {
+        count--;
+        if (count >= 1) {
+          counterEl.textContent = count;
+          statusEl.textContent = count === 2 ? '⧗ УСТАНОВЛЕНИЕ КАНАЛА...' : '⧗ ПОДГОТОВКА ТУННЕЛЯ...';
+        } else {
+          clearInterval(timer);
+          counterEl.textContent = 'GO';
+          statusEl.textContent = '✅ СОЕДИНЕНИЕ УСТАНОВЛЕНО';
+          bootEl.innerHTML = '> 🚀 ЗАПУСК ПРИЛОЖЕНИЯ...';
+          
+          setTimeout(() => {
+            window.location.href = decodedKey;
+            
+            setTimeout(() => {
+              const fallback = document.getElementById('fallback');
+              const fallbackLink = document.getElementById('fallback-link');
+              fallbackLink.href = decodedKey;
+              fallback.classList.remove('hidden');
+            }, 1500);
+          }, 500);
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
