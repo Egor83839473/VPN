@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VPN Import — Windows / Android</title>
+  <title>VPN Import — универсальный</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #0a0f1e;
       color: white;
       text-align: center;
@@ -50,64 +50,80 @@
   <script>
     (function() {
       const params = new URLSearchParams(window.location.search);
-      const sub = params.get('sub');
+      const key = params.get('key');      // для Android (happ://add/...)
+      const sub = params.get('sub');      // для Windows (чистая HTTPS)
       
-      if (!sub) {
-        document.getElementById('content').innerHTML = '<p style="color:red;">❌ Параметр sub не передан</p>';
+      if (!key && !sub) {
+        document.getElementById('content').innerHTML = '<p style="color:red;">❌ Нет параметров key или sub</p>';
         return;
       }
 
-      // Декодируем чистую ссылку подписки
-      let subscriptionUrl = decodeURIComponent(sub);
-      
+      // Декодируем
+      let subscriptionUrl = '';
+      if (sub) {
+        subscriptionUrl = decodeURIComponent(sub);
+      } else if (key) {
+        let decodedKey = decodeURIComponent(key);
+        subscriptionUrl = decodedKey.replace(/^happ:\/\/add\//, '');
+      }
+
       // Определяем устройство
       const ua = navigator.userAgent.toLowerCase();
       const isAndroid = ua.includes('android');
       const isWindows = ua.includes('win');
+      const isIOS = ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod');
+      const isMac = ua.includes('macintosh');
       
       let content = '';
 
+      // ========== ANDROID ==========
       if (isAndroid) {
-        // ========== ANDROID ==========
-        const happUrl = `happ://add/${subscriptionUrl}`;
-        const v2rayUrl = `v2raytun://add/${subscriptionUrl}`;
-        const hiddifyUrl = `hiddify://import/${subscriptionUrl}`;
-        
-        content = `
-          <p style="color:#aaa;">📱 Android — выбери приложение:</p>
-          <a href="${happUrl}" class="button">📱 Happ</a>
-          <a href="${v2rayUrl}" class="button" style="background:#FF6B4A;">📡 V2RayTun</a>
-          <a href="${hiddifyUrl}" class="button" style="background:#2196F3;">🚀 Hiddify</a>
-          <div class="link-box">🔗 Чистая подписка:<br>${subscriptionUrl}</div>
-          <p style="font-size:12px; color:#888;">Если ничего не открылось — установи приложение из Google Play.</p>
-        `;
-        
-        // Пытаемся автоматически открыть Happ (необязательно, можно убрать)
-        setTimeout(() => {
-          window.location.href = happUrl;
-        }, 100);
-      } 
-      else if (isWindows) {
-        // ========== WINDOWS ==========
-        content = `
-          <p style="color:#aaa;">💻 Windows — загружается JSON-подписка...</p>
-          <p style="font-size:14px;">Если загрузка не началась автоматически, <a href="${subscriptionUrl}" style="color:#4CAF50;">нажми сюда</a>.</p>
-          <div class="link-box">🔗 Ссылка подписки:<br>${subscriptionUrl}</div>
-          <p style="font-size:12px; color:#888;">Сохрани файл .json и импортируй в Hiddify или вручную.</p>
-        `;
-        
-        // Автоматически начинаем загрузку JSON
-        window.location.href = subscriptionUrl;
+        if (!key) {
+          content = '<p style="color:red;">❌ Для Android нужен параметр key</p>';
+        } else {
+          let decodedKey = decodeURIComponent(key);
+          let v2rayUrl = decodedKey.replace('happ://', 'v2raytun://');
+          let hiddifyUrl = `hiddify://import/${subscriptionUrl}`;
+          
+          content = `
+            <p style="color:#aaa;">📱 Android — выбери приложение:</p>
+            <a href="${decodedKey}" class="button">📱 Happ</a>
+            <a href="${v2rayUrl}" class="button" style="background:#FF6B4A;">📡 V2RayTun</a>
+            <a href="${hiddifyUrl}" class="button" style="background:#2196F3;">🚀 Hiddify</a>
+            <div class="link-box">🔗 Чистая подписка:<br>${subscriptionUrl}</div>
+          `;
+        }
       }
+      
+      // ========== WINDOWS ==========
+      else if (isWindows) {
+        if (!sub) {
+          content = '<p style="color:red;">❌ Для Windows нужен параметр sub</p>';
+        } else {
+          content = `
+            <p style="color:#aaa;">💻 Windows — подписка готова к импорту</p>
+            <p style="font-size:14px;">Скопируй ссылку и вставь в Hiddify:</p>
+            <div class="link-box" onclick="navigator.clipboard.writeText('${subscriptionUrl}')">
+              ${subscriptionUrl}
+              <br><span style="color:#4CAF50;">📋 нажми, чтобы скопировать</span>
+            </div>
+            <p style="font-size:12px; color:#888;">Hiddify: Добавить подписку → Вставить ссылку → Импорт</p>
+            <p style="font-size:12px; color:#888;">Happ на Windows — НЕ ИСПОЛЬЗУЙ, он сломан.</p>
+          `;
+        }
+      }
+      
+      // ========== iOS / MAC / LINUX ==========
       else {
-        // Другие ОС (Mac, Linux, iOS) — показываем универсальные кнопки
-        const happUrl = `happ://add/${subscriptionUrl}`;
-        const hiddifyUrl = `hiddify://import/${subscriptionUrl}`;
+        let happUrl = `happ://add/${subscriptionUrl}`;
+        let hiddifyUrl = `hiddify://import/${subscriptionUrl}`;
+        let fairvpnUrl = `fairvpn://import/${subscriptionUrl}`;
         
         content = `
           <p style="color:#aaa;">🍏💻 Другие ОС — выбери приложение:</p>
           <a href="${happUrl}" class="button">📱 Happ</a>
           <a href="${hiddifyUrl}" class="button">🚀 Hiddify</a>
+          ${isIOS ? `<a href="${fairvpnUrl}" class="button" style="background:#9C27B0;">✨ FairVPN</a>` : ''}
           <div class="link-box">🔗 Чистая подписка:<br>${subscriptionUrl}</div>
         `;
       }
