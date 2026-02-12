@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VPN Import</title>
+  <title>VPN Import — все устройства</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -25,7 +25,8 @@
       padding: 40px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
-    h1 { color: #4CAF50; }
+    h1 { color: #4CAF50; margin-bottom: 10px; }
+    h2 { color: #ddd; font-size: 1.2em; margin-bottom: 30px; }
     .button {
       background: #4CAF50;
       color: white;
@@ -38,133 +39,153 @@
       text-decoration: none;
       display: inline-block;
       margin: 10px;
-      transition: transform 0.2s;
+      transition: transform 0.2s, background 0.2s;
     }
     .button:hover { transform: scale(1.05); background: #45a049; }
+    .button.secondary { background: #2a2f3e; color: #4CAF50; border: 1px solid #4CAF50; }
     .link-box {
       background: #2a2f3e;
       padding: 15px;
       border-radius: 10px;
       word-break: break-all;
       font-size: 12px;
-      margin-top: 20px;
+      margin-top: 30px;
       color: #aaa;
+      border: 1px solid #444;
+    }
+    .status {
+      background: #0e1a26;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      color: #8ab4f8;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🔐 ИМПОРТ VPN</h1>
-    <div id="status">⏳ Загрузка...</div>
+    <div id="status" class="status">⏳ Загружаем конфигурацию...</div>
     <div id="buttons"></div>
+    <div id="debug" class="link-box" style="display:none;"></div>
   </div>
 
   <script>
     (function() {
       // ===========================================
-      // ПОЛУЧАЕМ ССЫЛКУ ИЗ ПАРАМЕТРА key
+      // 1. ПОЛУЧАЕМ ССЫЛКУ ИЗ ПАРАМЕТРА key (как у продавца)
       // ===========================================
       const params = new URLSearchParams(window.location.search);
-      let key = params.get('key');
+      let key = params.get("key");
       
       const statusDiv = document.getElementById('status');
       const buttonsDiv = document.getElementById('buttons');
+      const debugDiv = document.getElementById('debug');
       
       if (!key) {
-        statusDiv.innerHTML = '❌ Нет ключа в ссылке';
-        buttonsDiv.innerHTML = '<p>Используй генератор для создания ссылки</p>';
+        statusDiv.innerHTML = '❌ Ошибка: параметр key не передан';
+        buttonsDiv.innerHTML = '<p>Используй генератор ссылок</p>';
         return;
       }
 
       try {
         // ===========================================
-        // ДЕКОДИРУЕМ URL
+        // 2. ДЕКОДИРУЕМ (просто на всякий случай, хотя key уже готов)
         // ===========================================
-        let decodedUrl = decodeURIComponent(key);
-        statusDiv.innerHTML = '✅ Ссылка получена, определяем устройство...';
+        let decodedKey = decodeURIComponent(key);
+        debugDiv.style.display = 'block';
+        debugDiv.innerHTML = `🔗 Ссылка: ${decodedKey}`;
         
         // ===========================================
-        // ОПРЕДЕЛЯЕМ УСТРОЙСТВО
+        // 3. ОПРЕДЕЛЯЕМ УСТРОЙСТВО
         // ===========================================
         const ua = navigator.userAgent.toLowerCase();
+        const platform = navigator.platform?.toLowerCase() || '';
+        
         const isAndroid = ua.includes('android');
         const isIOS = ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod');
-        const isMobile = isAndroid || isIOS;
-        const isWindows = ua.includes('windows');
-        const isMac = ua.includes('macintosh');
+        const isWindows = ua.includes('win') || platform.includes('win');
+        const isMac = ua.includes('macintosh') || platform.includes('mac');
+        const isLinux = ua.includes('linux') && !isAndroid;
         
         // ===========================================
-        // СОЗДАЕМ ПРОТОКОЛЫ ДЛЯ РАЗНЫХ ПРИЛОЖЕНИЙ
+        // 4. ПЫТАЕМСЯ ОТКРЫТЬ HAPP — ТОЧНО КАК У ПРОДАВЦА (РАБОТАЕТ НА ANDROID)
         // ===========================================
-        // Исходная ссылка должна быть в формате: happ://add/ЧИСТАЯ_ССЫЛКА
-        let happUrl = decodedUrl;
-        
-        // Hiddify понимает тот же формат
-        let hiddifyUrl = decodedUrl.replace('happ://', 'hiddify://');
-        
-        // V2RayTun / FairVPN / Outline и т.д.
-        let v2raytunUrl = decodedUrl.replace('happ://', 'v2raytun://');
-        let fairvpnUrl = decodedUrl.replace('happ://', 'fairvpn://');
-        let outlineUrl = decodedUrl.replace('happ://add/', 'outline://');
+        statusDiv.innerHTML = '🔄 Открываем Happ...';
+        window.location.href = decodedKey;
         
         // ===========================================
-        // ВЫБИРАЕМ ПРИОРИТЕТНЫЙ ПРОТОКОЛ ПО УСТРОЙСТВУ
-        // ===========================================
-        let primaryUrl = happUrl;
-        let appName = 'Happ';
-        
-        if (isAndroid) {
-          // На Андроиде сначала пробуем V2RayTun, потом Happ
-          primaryUrl = v2raytunUrl;
-          appName = 'V2RayTun';
-        } else if (isIOS) {
-          // На iOS сначала пробуем Happ, потом FairVPN
-          primaryUrl = happUrl;
-          appName = 'Happ';
-        } else if (isWindows) {
-          // На Windows сначала Hiddify (он лучше работает), потом Happ
-          primaryUrl = hiddifyUrl;
-          appName = 'Hiddify';
-        } else if (isMac) {
-          // На Mac сначала Hiddify
-          primaryUrl = hiddifyUrl;
-          appName = 'Hiddify';
-        }
-        
-        // ===========================================
-        // ПРОБУЕМ ОТКРЫТЬ ПРИЛОЖЕНИЕ
-        // ===========================================
-        statusDiv.innerHTML = `🔄 Открываем ${appName}...`;
-        window.location.href = primaryUrl;
-        
-        // ===========================================
-        // ЕСЛИ НЕ СРАБОТАЛО - ПОКАЗЫВАЕМ ВСЕ ВАРИАНТЫ
+        // 5. ЧЕРЕЗ 1.5 СЕКУНДЫ ПОКАЗЫВАЕМ КНОПКИ ДЛЯ УСТРОЙСТВА
         // ===========================================
         setTimeout(() => {
-          statusDiv.innerHTML = '⚠️ Приложение не открылось автоматически';
+          statusDiv.innerHTML = '⚠️ Если приложение не открылось, выбери вариант:';
           
           let buttons = '';
+          let appName = '';
           
-          // Кнопки для разных приложений
-          buttons += `<a href="${happUrl}" class="button">📱 Happ</a>`;
-          buttons += `<a href="${hiddifyUrl}" class="button">🚀 Hiddify</a>`;
-          
+          // --- АНДРОИД ---
           if (isAndroid) {
-            buttons += `<a href="${v2raytunUrl}" class="button">📡 V2RayTun</a>`;
+            appName = 'Android';
+            buttons = `
+              <a href="${decodedKey}" class="button">📱 Happ</a>
+              <a href="v2raytun://add/${extractCleanUrl(decodedKey)}" class="button secondary">📡 V2RayTun</a>
+              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button secondary">🚀 Hiddify</a>
+              <p style="margin-top: 20px; color: #aaa;">Happ — основной клиент, V2RayTun — альтернатива</p>
+            `;
+          }
+          // --- iOS ---
+          else if (isIOS) {
+            appName = 'iPhone/iPad';
+            buttons = `
+              <a href="${decodedKey}" class="button">📱 Happ</a>
+              <a href="fairvpn://import/${extractCleanUrl(decodedKey)}" class="button secondary">✨ FairVPN</a>
+              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button secondary">🚀 Hiddify</a>
+              <p style="margin-top: 20px; color: #aaa;">Happ — основной, FairVPN — для iOS</p>
+            `;
+          }
+          // --- WINDOWS ---
+          else if (isWindows) {
+            appName = 'Windows';
+            buttons = `
+              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button">🚀 Hiddify</a>
+              <a href="${decodedKey}" class="button secondary">📱 Happ</a>
+              <p style="margin-top: 20px; color: #aaa;">Hiddify лучше работает на Windows, Happ — если он установлен</p>
+            `;
+          }
+          // --- MAC ---
+          else if (isMac) {
+            appName = 'Mac';
+            buttons = `
+              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button">🚀 Hiddify</a>
+              <a href="${decodedKey}" class="button secondary">📱 Happ</a>
+              <a href="fairvpn://import/${extractCleanUrl(decodedKey)}" class="button secondary">✨ FairVPN</a>
+            `;
+          }
+          // --- LINUX / ДРУГИЕ ---
+          else {
+            appName = 'Другая ОС';
+            buttons = `
+              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button">🚀 Hiddify</a>
+              <a href="${decodedKey}" class="button secondary">📱 Happ</a>
+            `;
           }
           
-          if (isIOS) {
-            buttons += `<a href="${fairvpnUrl}" class="button">✨ FairVPN</a>`;
-          }
+          buttonsDiv.innerHTML = buttons + `<div class="link-box">${decodedKey}</div>`;
+          debugDiv.innerHTML += `<br><br>✅ Устройство: ${appName}`;
           
-          buttons += `<a href="${outlineUrl}" class="button">🔵 Outline</a>`;
-          
-          buttonsDiv.innerHTML = buttons + `<div class="link-box">${decodedUrl}</div>`;
-        }, 1500);
+        }, 1500);  // 1.5 секунды — ждём, не блокируем Happ
+        
+        // ===========================================
+        // ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ — извлекаем чистый URL из happ://add/...
+        // ===========================================
+        function extractCleanUrl(happUrl) {
+          return happUrl.replace(/^happ:\/\/add\//, '');
+        }
         
       } catch(e) {
-        statusDiv.innerHTML = '❌ Ошибка обработки ссылки';
+        statusDiv.innerHTML = '❌ Ошибка обработки';
         buttonsDiv.innerHTML = `<div class="link-box">${key}</div>`;
+        console.error(e);
       }
     })();
   </script>
