@@ -2,31 +2,189 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <title>Открытие V2RayTun / Happ...</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPN Import — автоопределение</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0f1e;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 600px;
+      background: #1a1f2e;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    h2 { color: #4CAF50; }
+    .button {
+      display: inline-block;
+      background: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      margin: 8px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .link-box {
+      background: #2a2f3e;
+      padding: 12px;
+      border-radius: 8px;
+      word-break: break-all;
+      font-size: 12px;
+      margin-top: 20px;
+      color: #aaa;
+    }
+  </style>
 </head>
 <body>
-  <h2>Открытие приложения...</h2>
+  <div class="container">
+    <h2>🔄 Определяем устройство...</h2>
+    <div id="status">Загрузка...</div>
+    <div id="fallback" style="display: none;"></div>
+  </div>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      // Получаем ключ из параметра GET
+      // ========== ПОЛУЧАЕМ ПАРАМЕТР key ==========
       const params = new URLSearchParams(window.location.search);
-      const key = params.get("key");
-
-      if (key) {
-        // Пробуем открыть приложение через пользовательский протокол
-        window.location.href = key;
-
-        // Если приложение не открылось, показываем ссылку для ручного открытия
-        setTimeout(() => {
-          document.body.innerHTML = `
-            <h2>Если приложение не открылось автоматически, нажмите ссылку ниже:</h2>
-            <a href="${key}">${key}</a>
-          `;
-        }, 2000);
-      } else {
-        document.body.innerHTML = "<h2>Ошибка: параметр 'key' не передан.</h2>";
+      let key = params.get("key");
+      
+      if (!key) {
+        document.body.innerHTML = "<h2>❌ Ошибка: параметр 'key' не передан.</h2>";
+        return;
       }
+
+      // ========== ДЕКОДИРУЕМ И ИЗВЛЕКАЕМ ЧИСТУЮ ССЫЛКУ ==========
+      try {
+        key = decodeURIComponent(key);
+      } catch (e) {}
+      
+      // Ожидаемый формат: happ://add/ЧИСТАЯ_SUBSCRIPTION_URL
+      let subscriptionUrl = key.replace(/^happ:\/\/add\//, '');
+      
+      // ========== ОПРЕДЕЛЯЕМ ПЛАТФОРМУ ==========
+      const ua = navigator.userAgent.toLowerCase();
+      const isAndroid = ua.includes('android');
+      const isIOS = ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod');
+      const isWindows = ua.includes('win');
+      const isMac = ua.includes('macintosh');
+      const isLinux = ua.includes('linux') && !isAndroid;
+      
+      // ========== ФОРМИРУЕМ СПИСОК ПРОТОКОЛОВ ДЛЯ АВТОРЕДИРЕКТА ==========
+      let urlsToTry = [];
+      
+      // --- Android ---
+      if (isAndroid) {
+        urlsToTry = [
+          `v2raytun://add/${subscriptionUrl}`,   // V2RayTun (лучше всего)
+          `happ://add/${subscriptionUrl}`,        // Happ
+          `hiddify://import/${subscriptionUrl}`,  // Hiddify
+          `outline://${subscriptionUrl}`          // Outline
+        ];
+      }
+      // --- iOS ---
+      else if (isIOS) {
+        urlsToTry = [
+          `happ://add/${subscriptionUrl}`,        // Happ
+          `fairvpn://import/${subscriptionUrl}`,  // FairVPN
+          `hiddify://import/${subscriptionUrl}`,  // Hiddify
+          `outline://${subscriptionUrl}`          // Outline
+        ];
+      }
+      // --- Windows ---
+      else if (isWindows) {
+        urlsToTry = [
+          `hiddify://import/${subscriptionUrl}`,  // Hiddify (лучше на Windows)
+          `happ://add/${subscriptionUrl}`,        // Happ
+          `outline://${subscriptionUrl}`          // Outline
+        ];
+      }
+      // --- Mac ---
+      else if (isMac) {
+        urlsToTry = [
+          `hiddify://import/${subscriptionUrl}`,  // Hiddify
+          `happ://add/${subscriptionUrl}`,        // Happ
+          `fairvpn://import/${subscriptionUrl}`   // FairVPN
+        ];
+      }
+      // --- Linux / остальные ---
+      else {
+        urlsToTry = [
+          `hiddify://import/${subscriptionUrl}`,
+          `happ://add/${subscriptionUrl}`
+        ];
+      }
+
+      // ========== ПРОБУЕМ ОТКРЫВАТЬ ПО ОЧЕРЕДИ ==========
+      function tryOpen(index) {
+        if (index >= urlsToTry.length) {
+          // Если ничего не открылось — показываем кнопки
+          showFallback();
+          return;
+        }
+        
+        const url = urlsToTry[index];
+        document.getElementById('status').innerHTML = `🔄 Пробуем ${getAppName(url)}...`;
+        
+        // Пытаемся открыть
+        window.location.href = url;
+        
+        // Ждём немного и пробуем следующий, если не сработало
+        setTimeout(() => {
+          tryOpen(index + 1);
+        }, 800);  // 800 мс — достаточно, чтобы понять, что приложение не открылось
+      }
+
+      // ========== ПОКАЗЫВАЕМ КНОПКИ ДЛЯ РУЧНОГО ВЫБОРА ==========
+      function showFallback() {
+        document.getElementById('status').innerHTML = '⚠️ Выберите приложение:';
+        
+        let buttonsHtml = '';
+        
+        // Уникальные кнопки для платформы
+        const allUrls = [
+          { url: `happ://add/${subscriptionUrl}`, name: 'Happ', emoji: '📱' },
+          { url: `v2raytun://add/${subscriptionUrl}`, name: 'V2RayTun', emoji: '📡', hide: !isAndroid },
+          { url: `hiddify://import/${subscriptionUrl}`, name: 'Hiddify', emoji: '🚀' },
+          { url: `fairvpn://import/${subscriptionUrl}`, name: 'FairVPN', emoji: '✨', hide: !isIOS },
+          { url: `outline://${subscriptionUrl}`, name: 'Outline', emoji: '🔵' }
+        ];
+        
+        allUrls.forEach(item => {
+          if (!item.hide) {
+            buttonsHtml += `<a href="${item.url}" class="button">${item.emoji} ${item.name}</a>`;
+          }
+        });
+        
+        buttonsHtml += `<div class="link-box">🔗 Чистая подписка:<br>${subscriptionUrl}</div>`;
+        
+        document.getElementById('fallback').innerHTML = buttonsHtml;
+        document.getElementById('fallback').style.display = 'block';
+      }
+
+      // ========== ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ ==========
+      function getAppName(url) {
+        if (url.includes('happ://')) return 'Happ';
+        if (url.includes('v2raytun://')) return 'V2RayTun';
+        if (url.includes('hiddify://')) return 'Hiddify';
+        if (url.includes('fairvpn://')) return 'FairVPN';
+        if (url.includes('outline://')) return 'Outline';
+        return 'приложение';
+      }
+
+      // ========== ЗАПУСКАЕМ ==========
+      tryOpen(0);
     });
   </script>
 </body>
