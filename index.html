@@ -91,29 +91,15 @@
       letter-spacing: 10px;
     }
     .hidden { display: none; }
-    .crypto-badge {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      color: #0f0;
-      font-size: 12px;
-      padding: 5px 10px;
-      border: 1px solid #0f0;
-      border-radius: 20px;
-      background: rgba(0,0,0,0.7);
-      z-index: 999;
-      letter-spacing: 2px;
-    }
   </style>
 </head>
 <body>
-  <div class="crypto-badge">🔐 CRYPTO • SSL • СКРЫТЫЙ URL</div>
   <div class="matrix"></div>
   
   <div id="main" class="container">
     <div class="status" id="status">⧗ ИНИЦИАЛИЗАЦИЯ...</div>
     <div class="counter" id="counter">3</div>
-    <div style="color: #0f0; margin-top: 20px;" id="boot">> УСТАНОВКА ЗАЩИЩЁННОГО КАНАЛА<span id="dots">...</span></div>
+    <div style="color: #0f0; margin-top: 20px;" id="boot">> УСТАНОВКА СОЕДИНЕНИЯ<span id="dots">...</span></div>
   </div>
 
   <div id="fallback" class="fullscreen-button hidden">
@@ -126,79 +112,48 @@
   </div>
 
   <script>
-    (function() {
-      // ========== ПОЛУЧАЕМ ПАРАМЕТР key ==========
-      const params = new URLSearchParams(window.location.search);
-      let key = params.get("key");
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get("key");
 
-      if (!key) {
-        document.body.innerHTML = '<div style="color: red; padding: 20px;">❌ ERROR: AUTH KEY MISSING<br><br>Используй ссылку с ?key=...</div>';
-        return;
-      }
+    if (!key) {
+      document.body.innerHTML = '<div style="color: red; padding: 20px;">❌ ERROR: AUTH KEY MISSING<br><br>Используй ссылку с ?key=...</div>';
+    } else {
+      const decodedKey = decodeURIComponent(key);
+      const subId = decodedKey.split('/').pop();
+      
+      let count = 3;
+      const counterEl = document.getElementById('counter');
+      const statusEl = document.getElementById('status');
+      const bootEl = document.getElementById('boot');
+      const dotsEl = document.getElementById('dots');
+setInterval(() => {
+        dotsEl.innerHTML = '.'.repeat((dotsEl.innerHTML.length % 3) + 1);
+      }, 300);
 
-      try {
-        // ========== ДЕКОДИРУЕМ ==========
-        let decodedKey = decodeURIComponent(key);
-        
-        // ========== ПРИНУДИТЕЛЬНОЕ ШИФРОВАНИЕ! ==========
-        // Даже если пришла add-ссылка — делаем crypto
-        let finalKey = decodedKey;
-        if (finalKey.includes('happ://add/')) {
-          finalKey = finalKey.replace('happ://add/', 'happ://crypto/');
-          console.log('🔐 Принудительное шифрование: add → crypto');
-        }
-        
-        // ========== ИЗВЛЕКАЕМ ID ДЛЯ КРАСИВОГО ОТОБРАЖЕНИЯ ==========
-        const subId = finalKey.split('/').pop() || 'VPN';
-        
-        // ========== АНИМАЦИЯ ТОЧЕК ==========
-        let count = 3;
-        const counterEl = document.getElementById('counter');
-        const statusEl = document.getElementById('status');
-        const bootEl = document.getElementById('boot');
-        const dotsEl = document.getElementById('dots');
-        
-        setInterval(() => {
-          dotsEl.innerHTML = '.'.repeat((dotsEl.innerHTML.length % 3) + 1);
-        }, 300);
-
-        // ========== ОБРАТНЫЙ ОТСЧЁТ ==========
-        const timer = setInterval(() => {
-          count--;
-          if (count >= 1) {
-            counterEl.textContent = count;
-            statusEl.textContent = count === 2 ? '⧗ УСТАНОВЛЕНИЕ КРИПТО-КАНАЛА...' : '⧗ ШИФРОВАНИЕ ДАННЫХ...';
-          } else {
-            clearInterval(timer);
-            counterEl.textContent = 'GO';
-            statusEl.textContent = '✅ CRYPTO-СОЕДИНЕНИЕ УСТАНОВЛЕНО';
-            bootEl.innerHTML = '> 🚀 ЗАПУСК ПРИЛОЖЕНИЯ...';
+      const timer = setInterval(() => {
+        count--;
+        if (count >= 1) {
+          counterEl.textContent = count;
+          statusEl.textContent = count === 2 ? '⧗ УСТАНОВЛЕНИЕ КАНАЛА...' : '⧗ ПОДГОТОВКА ТУННЕЛЯ...';
+        } else {
+          clearInterval(timer);
+          counterEl.textContent = 'GO';
+          statusEl.textContent = '✅ СОЕДИНЕНИЕ УСТАНОВЛЕНО';
+          bootEl.innerHTML = '> 🚀 ЗАПУСК ПРИЛОЖЕНИЯ...';
+          
+          setTimeout(() => {
+            window.location.href = decodedKey;
             
-            // ========== ПРОБУЕМ ОТКРЫТЬ ==========
             setTimeout(() => {
-              // Открываем crypto-ссылку
-              window.location.href = finalKey;
-              
-              // ========== ФОЛБЭК КАК У ПРОДАВЦА ==========
-              setTimeout(() => {
-                const fallback = document.getElementById('fallback');
-                const fallbackLink = document.getElementById('fallback-link');
-                fallbackLink.href = finalKey;
-                fallback.classList.remove('hidden');
-                
-                // Обновляем статус
-                statusEl.innerHTML = '⚠️ ТРЕБУЕТСЯ ПОДТВЕРЖДЕНИЕ';
-                bootEl.innerHTML = '> НАЖМИ ⏎ ДЛЯ АКТИВАЦИИ';
-              }, 2000); // Точно как у продавца — 2 секунды
-              
-            }, 500);
-          }
-        }, 1000);
-        
-      } catch(e) {
-        document.body.innerHTML = `<div style="color: red; padding: 20px;">❌ ERROR: ${e.message}</div>`;
-      }
-    })();
+              const fallback = document.getElementById('fallback');
+              const fallbackLink = document.getElementById('fallback-link');
+              fallbackLink.href = decodedKey;
+              fallback.classList.remove('hidden');
+            }, 1500);
+          }, 500);
+        }
+      }, 1000);
+    }
   </script>
 </body>
 </html>
