@@ -1,49 +1,172 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>VPN Auto Import</title>
-    <script>
-        (function() {
-            let subscriptionUrl = null;
-            
-            // === 1. Пробуем получить из ПАРАМЕТРОВ (?key=...) ===
-            try {
-                const urlParams = new URLSearchParams(window.location.search);
-                const key = urlParams.get('key');
-                if (key) {
-                    let b64 = key.replace(/_/g, '/').replace(/-/g, '+');
-                    while (b64.length % 4) b64 += '=';
-                    subscriptionUrl = atob(b64);
-                }
-            } catch(e) {}
-            
-            // === 2. Пробуем получить из ХЕША (#config=...) ===
-            if (!subscriptionUrl && window.location.hash) {
-                try {
-                    const hash = window.location.hash.substring(1);
-                    if (hash.startsWith('config=')) {
-                        let b64 = hash.replace('config=', '');
-                        b64 = b64.replace(/_/g, '/').replace(/-/g, '+');
-                        while (b64.length % 4) b64 += '=';
-                        const config = JSON.parse(atob(b64));
-                        subscriptionUrl = config.sub;
-                    }
-                } catch(e) {}
-            }
-            
-            // === 3. Если нашли ссылку — ДОБАВЛЯЕМ happ://add/ ПЕРЕД РЕДИРЕКТОМ ===
-            if (subscriptionUrl) {
-                // ВАЖНО: happ://add/ добавляем ЗДЕСЬ, а не в параметре!
-                window.location.href = `happ://add/${subscriptionUrl}`;
-            } else {
-                document.body.innerHTML = '<h2>❌ Нет ссылки</h2><p>Используй генератор</p>';
-            }
-        })();
-    </script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPN Import</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #0a0f1e;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 600px;
+      background: #1a1f2e;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    h1 { color: #4CAF50; }
+    .button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      margin: 10px;
+      transition: transform 0.2s;
+    }
+    .button:hover { transform: scale(1.05); background: #45a049; }
+    .link-box {
+      background: #2a2f3e;
+      padding: 15px;
+      border-radius: 10px;
+      word-break: break-all;
+      font-size: 12px;
+      margin-top: 20px;
+      color: #aaa;
+    }
+  </style>
 </head>
 <body>
-    <p>🔄 Перенаправление...</p>
+  <div class="container">
+    <h1>🔐 ИМПОРТ VPN</h1>
+    <div id="status">⏳ Загрузка...</div>
+    <div id="buttons"></div>
+  </div>
+
+  <script>
+    (function() {
+      // ===========================================
+      // ПОЛУЧАЕМ ССЫЛКУ ИЗ ПАРАМЕТРА key
+      // ===========================================
+      const params = new URLSearchParams(window.location.search);
+      let key = params.get('key');
+      
+      const statusDiv = document.getElementById('status');
+      const buttonsDiv = document.getElementById('buttons');
+      
+      if (!key) {
+        statusDiv.innerHTML = '❌ Нет ключа в ссылке';
+        buttonsDiv.innerHTML = '<p>Используй генератор для создания ссылки</p>';
+        return;
+      }
+
+      try {
+        // ===========================================
+        // ДЕКОДИРУЕМ URL
+        // ===========================================
+        let decodedUrl = decodeURIComponent(key);
+        statusDiv.innerHTML = '✅ Ссылка получена, определяем устройство...';
+        
+        // ===========================================
+        // ОПРЕДЕЛЯЕМ УСТРОЙСТВО
+        // ===========================================
+        const ua = navigator.userAgent.toLowerCase();
+        const isAndroid = ua.includes('android');
+        const isIOS = ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod');
+        const isMobile = isAndroid || isIOS;
+        const isWindows = ua.includes('windows');
+        const isMac = ua.includes('macintosh');
+        
+        // ===========================================
+        // СОЗДАЕМ ПРОТОКОЛЫ ДЛЯ РАЗНЫХ ПРИЛОЖЕНИЙ
+        // ===========================================
+        // Исходная ссылка должна быть в формате: happ://add/ЧИСТАЯ_ССЫЛКА
+        let happUrl = decodedUrl;
+        
+        // Hiddify понимает тот же формат
+        let hiddifyUrl = decodedUrl.replace('happ://', 'hiddify://');
+        
+        // V2RayTun / FairVPN / Outline и т.д.
+        let v2raytunUrl = decodedUrl.replace('happ://', 'v2raytun://');
+        let fairvpnUrl = decodedUrl.replace('happ://', 'fairvpn://');
+        let outlineUrl = decodedUrl.replace('happ://add/', 'outline://');
+        
+        // ===========================================
+        // ВЫБИРАЕМ ПРИОРИТЕТНЫЙ ПРОТОКОЛ ПО УСТРОЙСТВУ
+        // ===========================================
+        let primaryUrl = happUrl;
+        let appName = 'Happ';
+        
+        if (isAndroid) {
+          // На Андроиде сначала пробуем V2RayTun, потом Happ
+          primaryUrl = v2raytunUrl;
+          appName = 'V2RayTun';
+        } else if (isIOS) {
+          // На iOS сначала пробуем Happ, потом FairVPN
+          primaryUrl = happUrl;
+          appName = 'Happ';
+        } else if (isWindows) {
+          // На Windows сначала Hiddify (он лучше работает), потом Happ
+          primaryUrl = hiddifyUrl;
+          appName = 'Hiddify';
+        } else if (isMac) {
+          // На Mac сначала Hiddify
+          primaryUrl = hiddifyUrl;
+          appName = 'Hiddify';
+        }
+        
+        // ===========================================
+        // ПРОБУЕМ ОТКРЫТЬ ПРИЛОЖЕНИЕ
+        // ===========================================
+        statusDiv.innerHTML = `🔄 Открываем ${appName}...`;
+        window.location.href = primaryUrl;
+        
+        // ===========================================
+        // ЕСЛИ НЕ СРАБОТАЛО - ПОКАЗЫВАЕМ ВСЕ ВАРИАНТЫ
+        // ===========================================
+        setTimeout(() => {
+          statusDiv.innerHTML = '⚠️ Приложение не открылось автоматически';
+          
+          let buttons = '';
+          
+          // Кнопки для разных приложений
+          buttons += `<a href="${happUrl}" class="button">📱 Happ</a>`;
+          buttons += `<a href="${hiddifyUrl}" class="button">🚀 Hiddify</a>`;
+          
+          if (isAndroid) {
+            buttons += `<a href="${v2raytunUrl}" class="button">📡 V2RayTun</a>`;
+          }
+          
+          if (isIOS) {
+            buttons += `<a href="${fairvpnUrl}" class="button">✨ FairVPN</a>`;
+          }
+          
+          buttons += `<a href="${outlineUrl}" class="button">🔵 Outline</a>`;
+          
+          buttonsDiv.innerHTML = buttons + `<div class="link-box">${decodedUrl}</div>`;
+        }, 1500);
+        
+      } catch(e) {
+        statusDiv.innerHTML = '❌ Ошибка обработки ссылки';
+        buttonsDiv.innerHTML = `<div class="link-box">${key}</div>`;
+      }
+    })();
+  </script>
 </body>
 </html>
