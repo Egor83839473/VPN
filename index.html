@@ -8,46 +8,42 @@
         (function() {
             let subscriptionUrl = null;
             
-            // === 1. Пробуем получить из ХЕША (#config=...) — для телефона ===
-            if (window.location.hash) {
+            // === 1. Пробуем получить из ПАРАМЕТРОВ (?key=...) ===
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const key = urlParams.get('key');
+                if (key) {
+                    let b64 = key.replace(/_/g, '/').replace(/-/g, '+');
+                    while (b64.length % 4) b64 += '=';
+                    subscriptionUrl = atob(b64);
+                }
+            } catch(e) {}
+            
+            // === 2. Пробуем получить из ХЕША (#config=...) ===
+            if (!subscriptionUrl && window.location.hash) {
                 try {
                     const hash = window.location.hash.substring(1);
                     if (hash.startsWith('config=')) {
                         let b64 = hash.replace('config=', '');
                         b64 = b64.replace(/_/g, '/').replace(/-/g, '+');
                         while (b64.length % 4) b64 += '=';
-                        const jsonStr = atob(b64);
-                        const config = JSON.parse(jsonStr);
+                        const config = JSON.parse(atob(b64));
                         subscriptionUrl = config.sub;
                     }
                 } catch(e) {}
             }
             
-            // === 2. Пробуем получить из ПАРАМЕТРОВ (?key=...) — для ПК ===
-            if (!subscriptionUrl) {
-                try {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const key = urlParams.get('key');
-                    if (key) {
-                        let b64 = key.replace(/_/g, '/').replace(/-/g, '+');
-                        while (b64.length % 4) b64 += '=';
-                        subscriptionUrl = decodeURIComponent(atob(b64));
-                        // Убираем happ://add/ если есть
-                        subscriptionUrl = subscriptionUrl.replace(/^happ:\/\/add\//, '');
-                    }
-                } catch(e) {}
-            }
-            
-            // === 3. Если нашли ссылку — редиректим ===
+            // === 3. Если нашли ссылку — ДОБАВЛЯЕМ happ://add/ ПЕРЕД РЕДИРЕКТОМ ===
             if (subscriptionUrl) {
+                // ВАЖНО: happ://add/ добавляем ЗДЕСЬ, а не в параметре!
                 window.location.href = `happ://add/${subscriptionUrl}`;
             } else {
-                document.body.innerHTML = '<h2>❌ Нет ссылки</h2><p>Используй генератор для создания правильной ссылки</p>';
+                document.body.innerHTML = '<h2>❌ Нет ссылки</h2><p>Используй генератор</p>';
             }
         })();
     </script>
 </head>
 <body>
-    <p>🔄 Перенаправление в Happ...</p>
+    <p>🔄 Перенаправление...</p>
 </body>
 </html>
