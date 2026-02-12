@@ -2,159 +2,118 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>⚡ VPN PROTOCOL ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPN Import — Windows / Android</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
     body {
-      background: radial-gradient(circle at 50% 50%, #0a0f1e, #000);
-      color: #0f0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-    }
-    .matrix {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: repeating-linear-gradient(0deg, rgba(0,255,0,0.03) 0px, transparent 1px, transparent 3px);
-      animation: scan 8s linear infinite;
-      pointer-events: none;
-    }
-    @keyframes scan {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(100%); }
+      font-family: sans-serif;
+      background: #0a0f1e;
+      color: white;
+      text-align: center;
+      padding: 20px;
     }
     .container {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+      background: #1a1f2e;
+      border-radius: 20px;
+      padding: 30px;
     }
-    .counter {
-      font-size: clamp(80px, 25vw, 180px);
-      font-weight: 900;
-      color: #0f0;
-      text-shadow: 0 0 30px #0f0;
-      animation: pulse 1s infinite;
-      margin: 30px 0;
+    h2 { color: #4CAF50; }
+    .button {
+      display: inline-block;
+      background: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      margin: 8px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
     }
-    @keyframes pulse {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.8; transform: scale(1.1); }
-      100% { opacity: 1; transform: scale(1); }
+    .link-box {
+      background: #2a2f3e;
+      padding: 12px;
+      border-radius: 8px;
+      word-break: break-all;
+      font-size: 12px;
+      margin-top: 20px;
+      color: #aaa;
     }
-    .status {
-      font-size: clamp(16px, 5vw, 24px);
-      margin: 20px 0;
-      padding: 15px 30px;
-      border: 2px solid #0f0;
-      background: rgba(0,255,0,0.05);
-      border-radius: 50px;
-      letter-spacing: 5px;
-    }
-    .fullscreen-button {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background: rgba(0,0,0,0.95);
-      backdrop-filter: blur(10px);
-      z-index: 100;
-    }
-    .button-content {
-      border: 4px solid #0f0;
-      padding: clamp(20px, 8vw, 50px);
-      background: rgba(0,255,0,0.1);
-      animation: glow 2s infinite;
-    }
-    @keyframes glow {
-      0% { box-shadow: 0 0 20px #0f0; }
-      50% { box-shadow: 0 0 60px #0f0; }
-      100% { box-shadow: 0 0 20px #0f0; }
-    }
-    .button-text {
-      font-size: clamp(24px, 8vw, 48px);
-      color: #0f0;
-      text-transform: uppercase;
-      font-weight: 900;
-      letter-spacing: 10px;
-    }
-    .hidden { display: none; }
   </style>
 </head>
 <body>
-  <div class="matrix"></div>
-  
-  <div id="main" class="container">
-    <div class="status" id="status">⧗ ИНИЦИАЛИЗАЦИЯ...</div>
-    <div class="counter" id="counter">3</div>
-    <div style="color: #0f0; margin-top: 20px;" id="boot">> УСТАНОВКА СОЕДИНЕНИЯ<span id="dots">...</span></div>
-  </div>
-
-  <div id="fallback" class="fullscreen-button hidden">
-    <a id="fallback-link" href="#" style="text-decoration: none;">
-      <div class="button-content">
-        <div class="button-text">⏎ АКТИВИРОВАТЬ ⏎</div>
-        <div style="color: #0f0; margin-top: 20px; font-size: 14px;">НАЖМИТЕ ДЛЯ ПОДКЛЮЧЕНИЯ</div>
-      </div>
-    </a>
+  <div class="container">
+    <h2>🔄 Определяем устройство...</h2>
+    <div id="content"></div>
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
-    const key = params.get("key");
-
-    if (!key) {
-      document.body.innerHTML = '<div style="color: red; padding: 20px;">❌ ERROR: AUTH KEY MISSING<br><br>Используй ссылку с ?key=...</div>';
-    } else {
-      const decodedKey = decodeURIComponent(key);
-      const subId = decodedKey.split('/').pop();
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const sub = params.get('sub');
       
-      let count = 3;
-      const counterEl = document.getElementById('counter');
-      const statusEl = document.getElementById('status');
-      const bootEl = document.getElementById('boot');
-      const dotsEl = document.getElementById('dots');
+      if (!sub) {
+        document.getElementById('content').innerHTML = '<p style="color:red;">❌ Параметр sub не передан</p>';
+        return;
+      }
 
-      setInterval(() => {
-        dotsEl.innerHTML = '.'.repeat((dotsEl.innerHTML.length % 3) + 1);
-      }, 300);
+      // Декодируем чистую ссылку подписки
+      let subscriptionUrl = decodeURIComponent(sub);
+      
+      // Определяем устройство
+      const ua = navigator.userAgent.toLowerCase();
+      const isAndroid = ua.includes('android');
+      const isWindows = ua.includes('win');
+      
+      let content = '';
 
-      const timer = setInterval(() => {
-        count--;
-        if (count >= 1) {
-          counterEl.textContent = count;
-          statusEl.textContent = count === 2 ? '⧗ УСТАНОВЛЕНИЕ КАНАЛА...' : '⧗ ПОДГОТОВКА ТУННЕЛЯ...';
-        } else {
-          clearInterval(timer);
-          counterEl.textContent = 'GO';
-          statusEl.textContent = '✅ СОЕДИНЕНИЕ УСТАНОВЛЕНО';
-          bootEl.innerHTML = '> 🚀 ЗАПУСК ПРИЛОЖЕНИЯ...';
-          
-          setTimeout(() => {
-            window.location.href = decodedKey;
-            
-            setTimeout(() => {
-              const fallback = document.getElementById('fallback');
-              const fallbackLink = document.getElementById('fallback-link');
-              fallbackLink.href = decodedKey;
-              fallback.classList.remove('hidden');
-            }, 1500);
-          }, 500);
-        }
-      }, 1000);
-    }
+      if (isAndroid) {
+        // ========== ANDROID ==========
+        const happUrl = `happ://add/${subscriptionUrl}`;
+        const v2rayUrl = `v2raytun://add/${subscriptionUrl}`;
+        const hiddifyUrl = `hiddify://import/${subscriptionUrl}`;
+        
+        content = `
+          <p style="color:#aaa;">📱 Android — выбери приложение:</p>
+          <a href="${happUrl}" class="button">📱 Happ</a>
+          <a href="${v2rayUrl}" class="button" style="background:#FF6B4A;">📡 V2RayTun</a>
+          <a href="${hiddifyUrl}" class="button" style="background:#2196F3;">🚀 Hiddify</a>
+          <div class="link-box">🔗 Чистая подписка:<br>${subscriptionUrl}</div>
+          <p style="font-size:12px; color:#888;">Если ничего не открылось — установи приложение из Google Play.</p>
+        `;
+        
+        // Пытаемся автоматически открыть Happ (необязательно, можно убрать)
+        setTimeout(() => {
+          window.location.href = happUrl;
+        }, 100);
+      } 
+      else if (isWindows) {
+        // ========== WINDOWS ==========
+        content = `
+          <p style="color:#aaa;">💻 Windows — загружается JSON-подписка...</p>
+          <p style="font-size:14px;">Если загрузка не началась автоматически, <a href="${subscriptionUrl}" style="color:#4CAF50;">нажми сюда</a>.</p>
+          <div class="link-box">🔗 Ссылка подписки:<br>${subscriptionUrl}</div>
+          <p style="font-size:12px; color:#888;">Сохрани файл .json и импортируй в Hiddify или вручную.</p>
+        `;
+        
+        // Автоматически начинаем загрузку JSON
+        window.location.href = subscriptionUrl;
+      }
+      else {
+        // Другие ОС (Mac, Linux, iOS) — показываем универсальные кнопки
+        const happUrl = `happ://add/${subscriptionUrl}`;
+        const hiddifyUrl = `hiddify://import/${subscriptionUrl}`;
+        
+        content = `
+          <p style="color:#aaa;">🍏💻 Другие ОС — выбери приложение:</p>
+          <a href="${happUrl}" class="button">📱 Happ</a>
+          <a href="${hiddifyUrl}" class="button">🚀 Hiddify</a>
+          <div class="link-box">🔗 Чистая подписка:<br>${subscriptionUrl}</div>
+        `;
+      }
+      
+      document.getElementById('content').innerHTML = content;
+    })();
   </script>
 </body>
 </html>
