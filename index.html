@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VPN Import — все устройства</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VPN Import — для всех устройств</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -21,172 +21,204 @@
     .container {
       max-width: 600px;
       background: #1a1f2e;
-      border-radius: 20px;
-      padding: 40px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      border-radius: 24px;
+      padding: 30px 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      border: 1px solid #2a2f3e;
     }
-    h1 { color: #4CAF50; margin-bottom: 10px; }
-    h2 { color: #ddd; font-size: 1.2em; margin-bottom: 30px; }
-    .button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      border-radius: 10px;
-      font-size: 18px;
-      font-weight: bold;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      margin: 10px;
-      transition: transform 0.2s, background 0.2s;
+    h1 {
+      color: #4CAF50;
+      font-size: 28px;
+      margin-bottom: 8px;
     }
-    .button:hover { transform: scale(1.05); background: #45a049; }
-    .button.secondary { background: #2a2f3e; color: #4CAF50; border: 1px solid #4CAF50; }
-    .link-box {
-      background: #2a2f3e;
-      padding: 15px;
-      border-radius: 10px;
-      word-break: break-all;
-      font-size: 12px;
-      margin-top: 30px;
+    .subtitle {
       color: #aaa;
-      border: 1px solid #444;
+      margin-bottom: 30px;
+      font-size: 16px;
     }
-    .status {
-      background: #0e1a26;
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 20px;
+    .button-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 20px;
+      border-radius: 14px;
+      font-size: 18px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: 0.2s;
+      border: none;
+      color: white;
+    }
+    .button i { margin-right: 10px; font-size: 24px; }
+    .happ { background: #4CAF50; color: white; }
+    .v2raytun { background: #FF6B4A; color: white; }
+    .hiddify { background: #2196F3; color: white; }
+    .fairvpn { background: #9C27B0; color: white; }
+    .outline { background: #795548; color: white; }
+    .link-box {
+      background: #0f1419;
+      padding: 16px;
+      border-radius: 12px;
+      word-break: break-all;
+      font-size: 13px;
       color: #8ab4f8;
+      margin-top: 25px;
+      border: 1px solid #2a2f3e;
+      text-align: left;
+    }
+    .device-badge {
+      background: #2a2f3e;
+      padding: 8px 16px;
+      border-radius: 30px;
+      display: inline-block;
+      margin-bottom: 15px;
+      font-size: 14px;
+      color: #ddd;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #2a2f3e;
+      margin: 25px 0 15px;
+    }
+    .small-note {
+      font-size: 12px;
+      color: #888;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🔐 ИМПОРТ VPN</h1>
-    <div id="status" class="status">⏳ Загружаем конфигурацию...</div>
-    <div id="buttons"></div>
-    <div id="debug" class="link-box" style="display:none;"></div>
+    <h1>🔐 VPN IMPORT</h1>
+    <div class="subtitle">Выбери своё приложение</div>
+    
+    <div id="deviceInfo" class="device-badge">⏳ Определяем устройство...</div>
+    
+    <div id="buttons" class="button-grid">
+      <!-- Сюда динамически подставятся кнопки -->
+    </div>
+
+    <div id="manual" style="display: none;">
+      <hr>
+      <div class="small-note">📋 Или скопируй ссылку подписки вручную:</div>
+      <div id="subscriptionLink" class="link-box"></div>
+    </div>
   </div>
 
   <script>
     (function() {
-      // ===========================================
-      // 1. ПОЛУЧАЕМ ССЫЛКУ ИЗ ПАРАМЕТРА key (как у продавца)
-      // ===========================================
-      const params = new URLSearchParams(window.location.search);
-      let key = params.get("key");
-      
-      const statusDiv = document.getElementById('status');
-      const buttonsDiv = document.getElementById('buttons');
-      const debugDiv = document.getElementById('debug');
+      // ========== ПОЛУЧАЕМ ПАРАМЕТР key ==========
+      const urlParams = new URLSearchParams(window.location.search);
+      const key = urlParams.get('key');
       
       if (!key) {
-        statusDiv.innerHTML = '❌ Ошибка: параметр key не передан';
-        buttonsDiv.innerHTML = '<p>Используй генератор ссылок</p>';
+        document.querySelector('.device-badge').innerText = '❌ Ошибка: параметр key не передан';
         return;
       }
 
-      try {
-        // ===========================================
-        // 2. ДЕКОДИРУЕМ (просто на всякий случай, хотя key уже готов)
-        // ===========================================
-        let decodedKey = decodeURIComponent(key);
-        debugDiv.style.display = 'block';
-        debugDiv.innerHTML = `🔗 Ссылка: ${decodedKey}`;
-        
-        // ===========================================
-        // 3. ОПРЕДЕЛЯЕМ УСТРОЙСТВО
-        // ===========================================
-        const ua = navigator.userAgent.toLowerCase();
-        const platform = navigator.platform?.toLowerCase() || '';
-        
-        const isAndroid = ua.includes('android');
-        const isIOS = ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod');
-        const isWindows = ua.includes('win') || platform.includes('win');
-        const isMac = ua.includes('macintosh') || platform.includes('mac');
-        const isLinux = ua.includes('linux') && !isAndroid;
-        
-        // ===========================================
-        // 4. ПЫТАЕМСЯ ОТКРЫТЬ HAPP — ТОЧНО КАК У ПРОДАВЦА (РАБОТАЕТ НА ANDROID)
-        // ===========================================
-        statusDiv.innerHTML = '🔄 Открываем Happ...';
-        window.location.href = decodedKey;
-        
-        // ===========================================
-        // 5. ЧЕРЕЗ 1.5 СЕКУНДЫ ПОКАЗЫВАЕМ КНОПКИ ДЛЯ УСТРОЙСТВА
-        // ===========================================
-        setTimeout(() => {
-          statusDiv.innerHTML = '⚠️ Если приложение не открылось, выбери вариант:';
-          
-          let buttons = '';
-          let appName = '';
-          
-          // --- АНДРОИД ---
-          if (isAndroid) {
-            appName = 'Android';
-            buttons = `
-              <a href="${decodedKey}" class="button">📱 Happ</a>
-              <a href="v2raytun://add/${extractCleanUrl(decodedKey)}" class="button secondary">📡 V2RayTun</a>
-              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button secondary">🚀 Hiddify</a>
-              <p style="margin-top: 20px; color: #aaa;">Happ — основной клиент, V2RayTun — альтернатива</p>
-            `;
-          }
-          // --- iOS ---
-          else if (isIOS) {
-            appName = 'iPhone/iPad';
-            buttons = `
-              <a href="${decodedKey}" class="button">📱 Happ</a>
-              <a href="fairvpn://import/${extractCleanUrl(decodedKey)}" class="button secondary">✨ FairVPN</a>
-              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button secondary">🚀 Hiddify</a>
-              <p style="margin-top: 20px; color: #aaa;">Happ — основной, FairVPN — для iOS</p>
-            `;
-          }
-          // --- WINDOWS ---
-          else if (isWindows) {
-            appName = 'Windows';
-            buttons = `
-              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button">🚀 Hiddify</a>
-              <a href="${decodedKey}" class="button secondary">📱 Happ</a>
-              <p style="margin-top: 20px; color: #aaa;">Hiddify лучше работает на Windows, Happ — если он установлен</p>
-            `;
-          }
-          // --- MAC ---
-          else if (isMac) {
-            appName = 'Mac';
-            buttons = `
-              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button">🚀 Hiddify</a>
-              <a href="${decodedKey}" class="button secondary">📱 Happ</a>
-              <a href="fairvpn://import/${extractCleanUrl(decodedKey)}" class="button secondary">✨ FairVPN</a>
-            `;
-          }
-          // --- LINUX / ДРУГИЕ ---
-          else {
-            appName = 'Другая ОС';
-            buttons = `
-              <a href="hiddify://import/${extractCleanUrl(decodedKey)}" class="button">🚀 Hiddify</a>
-              <a href="${decodedKey}" class="button secondary">📱 Happ</a>
-            `;
-          }
-          
-          buttonsDiv.innerHTML = buttons + `<div class="link-box">${decodedKey}</div>`;
-          debugDiv.innerHTML += `<br><br>✅ Устройство: ${appName}`;
-          
-        }, 1500);  // 1.5 секунды — ждём, не блокируем Happ
-        
-        // ===========================================
-        // ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ — извлекаем чистый URL из happ://add/...
-        // ===========================================
-        function extractCleanUrl(happUrl) {
-          return happUrl.replace(/^happ:\/\/add\//, '');
-        }
-        
-      } catch(e) {
-        statusDiv.innerHTML = '❌ Ошибка обработки';
-        buttonsDiv.innerHTML = `<div class="link-box">${key}</div>`;
-        console.error(e);
+      // Декодируем ссылку
+      let decodedKey = decodeURIComponent(key);
+      // Ожидаемый формат: happ://add/ЧИСТАЯ_SUBSCRIPTION_URL
+      let subscriptionUrl = decodedKey.replace(/^happ:\/\/add\//, '');
+      
+      // ========== ОПРЕДЕЛЯЕМ УСТРОЙСТВО ==========
+      const ua = navigator.userAgent.toLowerCase();
+      const platform = navigator.platform?.toLowerCase() || '';
+      
+      const isAndroid = ua.includes('android');
+      const isIOS = ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod');
+      const isWindows = ua.includes('win') || platform.includes('win');
+      const isMac = ua.includes('macintosh') || platform.includes('mac');
+      const isLinux = ua.includes('linux') && !isAndroid;
+
+      let deviceName = 'Неизвестное устройство';
+      if (isAndroid) deviceName = '📱 Android';
+      else if (isIOS) deviceName = '🍏 iPhone/iPad';
+      else if (isWindows) deviceName = '💻 Windows';
+      else if (isMac) deviceName = '💻 Mac';
+      else if (isLinux) deviceName = '🐧 Linux';
+
+      document.getElementById('deviceInfo').innerText = `📌 Устройство: ${deviceName}`;
+
+      // ========== ФОРМИРУЕМ КНОПКИ ==========
+      let buttonsHtml = '';
+
+      // --- УНИВЕРСАЛЬНЫЕ ПРОТОКОЛЫ ---
+      const happIntent = decodedKey; // happ://add/...
+      const hiddifyIntent = `hiddify://import/${subscriptionUrl}`;
+      const outlineIntent = `outline://${subscriptionUrl}`; // для Outline
+
+      // --- СПЕЦИФИЧНЫЕ ДЛЯ ANDROID ---
+      const v2raytunIntent = `v2raytun://add/${subscriptionUrl}`;
+
+      // --- СПЕЦИФИЧНЫЕ ДЛЯ iOS ---
+      const fairvpnIntent = `fairvpn://import/${subscriptionUrl}`;
+
+      // ========== ВЫВОД КНОПОК ПО УСТРОЙСТВУ ==========
+      
+      // ** ANDROID **
+      if (isAndroid) {
+        buttonsHtml = `
+          <a href="${happIntent}" class="button happ">📱 Happ (рекомендуется)</a>
+          <a href="${v2raytunIntent}" class="button v2raytun">📡 V2RayTun</a>
+          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify</a>
+          <a href="${outlineIntent}" class="button outline">🔵 Outline</a>
+        `;
       }
+      
+      // ** iOS **
+      else if (isIOS) {
+        buttonsHtml = `
+          <a href="${happIntent}" class="button happ">📱 Happ (рекомендуется)</a>
+          <a href="${fairvpnIntent}" class="button fairvpn">✨ FairVPN</a>
+          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify</a>
+          <a href="${outlineIntent}" class="button outline">🔵 Outline</a>
+        `;
+      }
+      
+      // ** WINDOWS **
+      else if (isWindows) {
+        buttonsHtml = `
+          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify (лучше для Windows)</a>
+          <a href="${happIntent}" class="button happ">📱 Happ</a>
+          <a href="${outlineIntent}" class="button outline">🔵 Outline</a>
+        `;
+      }
+      
+      // ** MAC **
+      else if (isMac) {
+        buttonsHtml = `
+          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify (рекомендуется)</a>
+          <a href="${happIntent}" class="button happ">📱 Happ</a>
+          <a href="${fairvpnIntent}" class="button fairvpn">✨ FairVPN</a>
+        `;
+      }
+      
+      // ** LINUX и другие **
+      else {
+        buttonsHtml = `
+          <a href="${hiddifyIntent}" class="button hiddify">🚀 Hiddify</a>
+          <a href="${happIntent}" class="button happ">📱 Happ</a>
+        `;
+      }
+
+      // Вставляем кнопки
+      document.getElementById('buttons').innerHTML = buttonsHtml;
+
+      // ========== ПОКАЗЫВАЕМ ССЫЛКУ ПОДПИСКИ ==========
+      const manualDiv = document.getElementById('manual');
+      const subLinkEl = document.getElementById('subscriptionLink');
+      subLinkEl.innerText = subscriptionUrl;
+      manualDiv.style.display = 'block';
+
+      // ========== НЕ ДЕЛАЕМ АВТОМАТИЧЕСКИЙ РЕДИРЕКТ ==========
+      // Только кнопки. Пользователь сам тыкает.
+
     })();
   </script>
 </body>
