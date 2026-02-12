@@ -3,139 +3,51 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>VPN Import</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0f1e;
-            color: white;
-            text-align: center;
-            padding: 20px;
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
-            max-width: 600px;
-            background: #1a1f2e;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        }
-        h1 {
-            font-size: 2em;
-            margin-bottom: 20px;
-            color: #4CAF50;
-        }
-        .button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            margin: 10px;
-            transition: transform 0.2s;
-        }
-        .button:hover {
-            transform: scale(1.05);
-            background: #45a049;
-        }
-        .error {
-            color: #ff6b6b;
-            background: rgba(255,107,107,0.1);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-        }
-        .link-box {
-            background: #2a2f3e;
-            padding: 15px;
-            border-radius: 10px;
-            word-break: break-all;
-            font-size: 12px;
-            margin-top: 20px;
-            color: #aaa;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🔐 VPN ИМПОРТ</h1>
-        
-        <div id="status"></div>
-        <div id="buttons"></div>
-        <div id="debug" class="link-box" style="display:none;"></div>
-    </div>
-
+    <title>VPN Auto Import</title>
     <script>
         (function() {
-            // Получаем key из URL
-            const urlParams = new URLSearchParams(window.location.search);
-            let key = urlParams.get('key');
+            let subscriptionUrl = null;
             
-            const statusDiv = document.getElementById('status');
-            const buttonsDiv = document.getElementById('buttons');
-            const debugDiv = document.getElementById('debug');
-            
-            // Если нет key - показываем инструкцию
-            if (!key) {
-                statusDiv.innerHTML = '❌ Нет ключа в ссылке';
-                buttonsDiv.innerHTML = '<p>Используй Python скрипт для генерации ссылки</p>';
-                return;
+            // === 1. Пробуем получить из ХЕША (#config=...) — для телефона ===
+            if (window.location.hash) {
+                try {
+                    const hash = window.location.hash.substring(1);
+                    if (hash.startsWith('config=')) {
+                        let b64 = hash.replace('config=', '');
+                        b64 = b64.replace(/_/g, '/').replace(/-/g, '+');
+                        while (b64.length % 4) b64 += '=';
+                        const jsonStr = atob(b64);
+                        const config = JSON.parse(jsonStr);
+                        subscriptionUrl = config.sub;
+                    }
+                } catch(e) {}
             }
             
-            // Показываем что получили
-            debugDiv.style.display = 'block';
-            debugDiv.innerHTML = `Получено: ${key}`;
+            // === 2. Пробуем получить из ПАРАМЕТРОВ (?key=...) — для ПК ===
+            if (!subscriptionUrl) {
+                try {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const key = urlParams.get('key');
+                    if (key) {
+                        let b64 = key.replace(/_/g, '/').replace(/-/g, '+');
+                        while (b64.length % 4) b64 += '=';
+                        subscriptionUrl = decodeURIComponent(atob(b64));
+                        // Убираем happ://add/ если есть
+                        subscriptionUrl = subscriptionUrl.replace(/^happ:\/\/add\//, '');
+                    }
+                } catch(e) {}
+            }
             
-            try {
-                // Декодируем URL
-                let decodedUrl = decodeURIComponent(key);
-                debugDiv.innerHTML += `<br><br>Декодировано: ${decodedUrl}`;
-                
-                // Проверяем что начинается с happ://
-                if (decodedUrl.startsWith('happ://')) {
-                    statusDiv.innerHTML = '✅ Перенаправление в Happ...';
-                    
-                    // СОБЫТИЕ 1: Пробуем открыть Happ
-                    window.location.href = decodedUrl;
-                    
-                    // СОБЫТИЕ 2: Через 1 секунду показываем кнопку
-                    setTimeout(function() {
-                        statusDiv.innerHTML = '⚠️ Если приложение не открылось - нажми кнопку';
-                        buttonsDiv.innerHTML = `
-                            <a href="${decodedUrl}" class="button">
-                                📱 Открыть в Happ
-                            </a>
-                        `;
-                    }, 1000);
-                    
-                    // СОБЫТИЕ 3: Через 3 секунды показываем ссылку
-                    setTimeout(function() {
-                        debugDiv.innerHTML += `<br><br>🔗 Ссылка: ${decodedUrl}`;
-                    }, 3000);
-                    
-                } else {
-                    statusDiv.innerHTML = '❌ Ошибка: неверный формат ссылки';
-                    debugDiv.innerHTML += `<br><br>❌ Должно начинаться с happ://`;
-                    buttonsDiv.innerHTML = `
-                        <p style="color:#ff6b6b;">Формат должен быть:</p>
-                        <div class="link-box">happ://add/ваша-ссылка</div>
-                    `;
-                }
-                
-            } catch(e) {
-                statusDiv.innerHTML = '❌ Ошибка декодирования';
-                debugDiv.innerHTML += `<br><br>❌ Ошибка: ${e.message}`;
+            // === 3. Если нашли ссылку — редиректим ===
+            if (subscriptionUrl) {
+                window.location.href = `happ://add/${subscriptionUrl}`;
+            } else {
+                document.body.innerHTML = '<h2>❌ Нет ссылки</h2><p>Используй генератор для создания правильной ссылки</p>';
             }
         })();
     </script>
+</head>
+<body>
+    <p>🔄 Перенаправление в Happ...</p>
 </body>
 </html>
