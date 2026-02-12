@@ -2,38 +2,42 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>⚡ VPN PROTOCOL INIT ⚡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>⚡ VPN BOOT SEQUENCE ⚡</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
-    body {
+    /* ПОЛНОЭКРАННЫЙ СБРОС */
+    * {
       margin: 0;
       padding: 0;
-      background: radial-gradient(circle at 50% 50%, #0a0f1e, #03050a);
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 50%, #0a0f1e, #000000);
       color: #00ff9d;
-      font-family: 'Share Tech Mono', monospace;
-      min-height: 100vh;
+      text-shadow: 0 0 10px rgba(0, 255, 157, 0.7);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
-      animation: flicker 3s infinite;
-      position: relative;
-      overflow-x: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
 
-    @keyframes flicker {
-      0% { opacity: 1; }
-      2% { opacity: 0.8; }
-      4% { opacity: 1; }
-      96% { opacity: 1; }
-      98% { opacity: 0.9; }
-      100% { opacity: 1; }
-    }
-
-    .matrix-bg {
+    /* МАТРИЧНЫЙ ФОН */
+    .matrix {
       position: fixed;
       top: 0;
       left: 0;
@@ -43,52 +47,161 @@
       background: repeating-linear-gradient(
         0deg,
         rgba(0, 255, 157, 0.03) 0px,
-        rgba(0, 0, 0, 0.5) 1px,
-        transparent 2px
+        transparent 1px,
+        transparent 3px
       );
-      z-index: -1;
+      animation: scan 8s linear infinite;
+      z-index: 0;
+    }
+
+    @keyframes scan {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(100%); }
     }
 
     .container {
-      max-width: 800px;
-      padding: 40px 30px;
-      background: rgba(10, 20, 30, 0.85);
-      backdrop-filter: blur(10px);
-      border: 1px solid #00ff9d;
-      box-shadow: 0 0 30px rgba(0, 255, 157, 0.2);
-      border-radius: 12px;
-      margin: 20px;
       position: relative;
-      animation: glitch 0.1s infinite;
+      z-index: 10;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      text-align: center;
+    }
+
+    /* ГЛАВНЫЙ ТИТР */
+    .glitch {
+      font-size: clamp(28px, 8vw, 56px);
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #00ff9d;
+      text-shadow: 
+        0.05em 0 0 rgba(255, 0, 0, 0.75),
+        -0.05em -0.025em 0 rgba(0, 255, 255, 0.75),
+        0.025em 0.05em 0 rgba(0, 255, 0, 0.75);
+      animation: glitch 500ms infinite;
+      margin-bottom: 20px;
     }
 
     @keyframes glitch {
       0% { transform: translate(0); }
-      20% { transform: translate(-1px, 1px); }
-      40% { transform: translate(1px, -1px); }
-      60% { transform: translate(-1px, 0); }
-      80% { transform: translate(1px, 1px); }
+      20% { transform: translate(-2px, 2px); }
+      40% { transform: translate(-2px, -2px); }
+      60% { transform: translate(2px, 2px); }
+      80% { transform: translate(2px, -2px); }
       100% { transform: translate(0); }
     }
 
-    .glitch-text {
-      font-size: 28px;
-      font-weight: bold;
-      margin-bottom: 20px;
-      position: relative;
-      animation: glitch 0.3s infinite;
-      color: #00ff9d;
-      text-shadow: 
-        -2px -2px 0 #ff00de,
-        2px 2px 0 #00ffff;
+    /* АСЦИИ АРТ - АДАПТИВНЫЙ */
+    .ascii {
+      font-size: clamp(6px, 2vw, 12px);
+      line-height: 1.2;
+      color: #0f0;
+      margin: 20px 0;
+      white-space: pre;
+      text-align: center;
+      text-shadow: 0 0 5px #0f0;
+      letter-spacing: 2px;
     }
 
-    .terminal-line {
-      margin: 15px 0;
-      font-size: 16px;
-      line-height: 1.6;
-      border-left: 3px solid #00ff9d;
-      padding-left: 15px;
+    /* ТАЙМЕР - ОГРОМНЫЙ */
+    .counter {
+      font-size: clamp(80px, 25vw, 180px);
+      font-weight: 900;
+      color: #00ff9d;
+      text-shadow: 0 0 30px #00ff9d;
+      line-height: 1;
+      margin: 30px 0;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.1); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* СТАТУС БАР */
+    .status {
+      font-size: clamp(14px, 4vw, 20px);
+      margin: 20px 0;
+      padding: 15px 25px;
+      border: 2px solid #00ff9d;
+      background: rgba(0, 255, 157, 0.05);
+      border-radius: 50px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+    }
+
+    /* ПРОГРЕСС БАР */
+    .progress-container {
+      width: min(80%, 600px);
+      height: 8px;
+      background: rgba(0, 255, 157, 0.2);
+      border-radius: 4px;
+      margin: 30px 0;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #00ff9d;
+      box-shadow: 0 0 20px #00ff9d;
+      transition: width 0.3s ease;
+    }
+
+    /* КНОПКА НА ВЕСЬ ЭКРАН */
+    .fullscreen-button {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      text-decoration: none;
+      padding: 20px;
+    }
+
+    .button-content {
+      border: 4px solid #00ff9d;
+      padding: clamp(20px, 8vw, 50px);
+      background: rgba(0, 255, 157, 0.1);
+      animation: glow 2s infinite;
+    }
+
+    .button-text {
+      font-size: clamp(24px, 8vw, 48px);
+      color: #00ff9d;
+      text-transform: uppercase;
+      font-weight: 900;
+      letter-spacing: 10px;
+    }
+
+    .button-sub {
+      font-size: clamp(12px, 4vw, 18px);
+      color: #fff;
+      margin-top: 20px;
+      opacity: 0.8;
+    }
+
+    @keyframes glow {
+      0% { box-shadow: 0 0 20px #00ff9d; }
+      50% { box-shadow: 0 0 60px #00ff9d; }
+      100% { box-shadow: 0 0 20px #00ff9d; }
+    }
+
+    .hidden {
+      display: none;
     }
 
     .cursor {
@@ -97,8 +210,6 @@
       height: 20px;
       background: #00ff9d;
       animation: blink 1s infinite;
-      vertical-align: middle;
-      margin-left: 5px;
     }
 
     @keyframes blink {
@@ -106,7 +217,174 @@
       50% { opacity: 0; }
     }
 
-    .button {
+    .sysinfo {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      font-size: 12px;
+      color: rgba(0, 255, 157, 0.5);
+      text-align: left;
+      z-index: 50;
+    }
+
+    /* АДАПТАЦИЯ ДЛЯ ТЕЛЕФОНОВ */
+    @supports (-webkit-touch-callout: none) {
+      body {
+        height: -webkit-fill-available;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="matrix"></div>
+  
+  <div id="main-screen" class="container">
+    <div class="ascii">
+╔══════════════════════════════════════════════════════════╗
+║  ██╗   ██╗██████╗ ███╗   ██╗    ███████╗██╗  ██╗██╗   ██╗║
+║  ██║   ██║██╔══██╗████╗  ██║    ██╔════╝██║ ██╔╝╚██╗ ██╔╝║
+║  ██║   ██║██████╔╝██╔██╗ ██║    █████╗  █████╔╝  ╚████╔╝ ║
+║  ╚██╗ ██╔╝██╔═══╝ ██║╚██╗██║    ██╔══╝  ██╔═██╗   ╚██╔╝  ║
+║   ╚████╔╝ ██║     ██║ ╚████║    ███████╗██║  ██╗   ██║   ║
+║    ╚═══╝  ╚═╝     ╚═╝  ╚═══╝    ╚══════╝╚═╝  ╚═╝   ╚═╝   ║
+╚══════════════════════════════════════════════════════════╝
+    </div>
+
+    <div class="glitch">SECURE TUNNEL PROTOCOL</div>
+    
+    <div id="status-message" class="status">⧗ ИНИЦИАЛИЗАЦИЯ СОЕДИНЕНИЯ...</div>
+    
+    <div id="counter" class="counter">3</div>
+    
+    <div class="progress-container">
+      <div id="progress" class="progress-bar" style="width: 0%;"></div>
+    </div>
+
+    <div id="boot-text" style="font-size: clamp(12px, 3vw, 16px); color: #6a9fb5; margin-top: 20px;">
+      > ESTABLISHING SECURE LINK<span id="dots"></span>
+    </div>
+  </div>
+
+  <div id="fallback-screen" class="fullscreen-button hidden">
+    <div class="button-content">
+      <div class="button-text">⏎ АКТИВИРОВАТЬ ⏎</div>
+      <div class="button-sub">НАЖМИТЕ ДЛЯ ПОДКЛЮЧЕНИЯ</div>
+      <div style="margin-top: 30px; font-size: 14px; color: #6a9fb5; word-break: break-all;" id="fallback-link"></div>
+    </div>
+  </div>
+
+  <div class="sysinfo">
+    [NODE: okak6766.dedyn.io]<br>
+    [PROTOCOL: VLESS/REALITY]<br>
+    [STATUS: <span id="sys-status">BOOTING</span>]<br>
+    [TIME: <span id="timestamp"></span>]
+  </div>
+
+  <script>
+    (function() {
+      // ========== ПОЛУЧАЕМ ПАРАМЕТРЫ ==========
+      const params = new URLSearchParams(window.location.search);
+      const key = params.get("key");
+      
+      if (!key) {
+        document.body.innerHTML = '<div style="color: red; padding: 20px;">❌ ERROR: AUTH KEY MISSING</div>';
+        return;
+      }
+
+      // Декодируем ссылку
+      const decodedKey = decodeURIComponent(key);
+      const subscriptionUrl = decodedKey.replace(/^happ:\/\/add\//, '');
+      
+      // ========== ОБНОВЛЯЕМ ВРЕМЯ ==========
+      document.getElementById('timestamp').textContent = new Date().toISOString().slice(11, 19);
+      
+      // ========== ЭПИЧНЫЙ ТАЙМЕР 3...2...1... ==========
+      const counterEl = document.getElementById('counter');
+      const progressEl = document.getElementById('progress');
+      const statusEl = document.getElementById('status-message');
+      const bootText = document.getElementById('boot-text');
+      const dots = document.getElementById('dots');
+      
+      let count = 3;
+      let dotCount = 0;
+      
+      // Анимация точек
+      setInterval(() => {
+        dotCount = (dotCount + 1) % 4;
+        if (dots) dots.innerHTML = '.'.repeat(dotCount);
+      }, 300);
+      
+      // Обновляем прогресс бар
+      progressEl.style.width = '0%';
+      
+      // Таймер обратного отсчета
+      const timer = setInterval(() => {
+        count--;
+        
+        if (count >= 1) {
+          counterEl.textContent = count;
+          progressEl.style.width = `${(3 - count) * 33}%`;
+          
+          if (count === 2) {
+            statusEl.textContent = '⧗ УСТАНОВЛЕНИЕ ЗАЩИЩЕННОГО КАНАЛА...';
+          } else if (count === 1) {
+            statusEl.textContent = '⧗ ПОДГОТОВКА ТУННЕЛЯ...';
+            bootText.innerHTML = '> ⚡ HANDSHAKE IN PROGRESS<span id="dots"></span>';
+          }
+        } else {
+          clearInterval(timer);
+          counterEl.textContent = 'GO';
+          progressEl.style.width = '100%';
+          statusEl.textContent = '✅ СОЕДИНЕНИЕ УСТАНОВЛЕНО';
+          bootText.innerHTML = '> 🚀 АКТИВАЦИЯ ПРОТОКОЛА...';
+          document.getElementById('sys-status').textContent = 'ACTIVE';
+          document.getElementById('sys-status').style.color = '#0f0';
+          
+          // ========== ПЕРЕХОД ЧЕРЕЗ 0.5 СЕКУНДЫ ==========
+          setTimeout(() => {
+            // Пытаемся открыть приложение
+            window.location.href = decodedKey;
+            
+            // Если не сработало через 1.5 сек — показываем кнопку на весь экран
+            setTimeout(() => {
+              if (!document.hidden) {
+                const fallbackScreen = document.getElementById('fallback-screen');
+                const fallbackLink = document.getElementById('fallback-link');
+                fallbackLink.innerHTML = decodedKey;
+                fallbackLink.style.fontSize = window.innerWidth < 600 ? '12px' : '14px';
+                
+                // Кнопка на весь экран
+                const button = fallbackScreen.querySelector('.button-content');
+                button.onclick = () => {
+                  window.location.href = decodedKey;
+                  return false;
+                };
+                
+                fallbackScreen.classList.remove('hidden');
+              }
+            }, 1500);
+          }, 500);
+        }
+      }, 1000);
+      
+      // Предзагрузка кнопки с ссылкой
+      const fallbackLink = document.getElementById('fallback-link');
+      fallbackLink.innerHTML = decodedKey;
+      fallbackLink.onclick = (e) => {
+        e.preventDefault();
+        window.location.href = decodedKey;
+        return false;
+      };
+      
+      // Адаптация для телефонов
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        document.body.style.background = 'radial-gradient(circle at 50% 50%, #0a0f1e, #000)';
+      }
+      
+    })();
+  </script>
+</body>
+</html>    .button {
       display: inline-block;
       margin-top: 25px;
       padding: 15px 35px;
